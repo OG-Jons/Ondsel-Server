@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2024 Ondsel <development@ondsel.com>
+// SPDX-FileCopyrightText: 2025 Amritpal Singh <amrit3701@gmail.com>
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
@@ -54,6 +54,21 @@ const desktopAppSchema = Type.Object({
   protocol: Type.String(),
 })
 
+// OAuth provider config sub-schema
+const oauthProviderConfigSchema = Type.Object({
+  enabled: Type.Boolean(),
+  clientId: Type.String(),
+  clientSecret: Type.String(),
+  redirectUri: Type.String(),
+})
+
+// OAuth config sub-schema
+const oauthConfigSchema = Type.Object({
+  providers: Type.Object({
+    google: oauthProviderConfigSchema,
+  })
+})
+
 // Main data model schema
 export const siteConfigSchema = Type.Object(
   {
@@ -66,6 +81,7 @@ export const siteConfigSchema = Type.Object(
     homepageContent: homepageContentSchema,
     defaultModel: defaultModelSchema,
     desktopApp: desktopAppSchema,
+    oauth: oauthConfigSchema,
     customized: Type.Object({
       logoUrl: Type.Boolean(),
       faviconUrl: Type.Boolean(),
@@ -75,6 +91,7 @@ export const siteConfigSchema = Type.Object(
       homepageContent: Type.Boolean(),
       defaultModel: Type.Boolean(),
       desktopApp: Type.Boolean(),
+      oauth: Type.Boolean(),
     }),
     updatedAt: Type.Number(),
     updatedBy: Type.Optional(userSummarySchema)

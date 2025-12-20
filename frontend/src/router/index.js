@@ -1,4 +1,5 @@
 // SPDX-FileCopyrightText: 2024 Ondsel <development@ondsel.com>
+// SPDX-FileCopyrightText: 2025 Amritpal Singh <amrit3701@gmail.com>
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
@@ -52,6 +53,7 @@ import XavierBrandingHub from "@/views/XavierBrandingHub.vue";
 import XavierBrandingIdentity from "@/views/XavierBrandingIdentity.vue";
 import XavierBrandingHomepage from "@/views/XavierBrandingHomepage.vue";
 import XavierBrandingDefaultModel from "@/views/XavierBrandingDefaultModel.vue";
+import XavierOAuthConfig from "@/views/XavierOAuthConfig.vue";
 
 
 const isWindowLoadedInIframe = () => {
@@ -253,6 +255,12 @@ const routes = [
     path: '/xavier-branding-default-model-55667788',
     component: XavierBrandingDefaultModel,
     name: 'XavierBrandingDefaultModel',
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/xavier-oauth-12345678',
+    component: XavierOAuthConfig,
+    name: 'XavierOAuthConfig',
     meta: { requiresAuth: true },
   },
   {
