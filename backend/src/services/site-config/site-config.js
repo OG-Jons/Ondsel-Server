@@ -154,7 +154,23 @@ export const siteConfig = (app) => {
       remove: [disallow()]
     },
     after: {
-      all: []
+      all: [],
+      patch: [
+        async (context) => {
+          if (context.result?.oauth) {
+            const updateOAuthConfig = context.app.get('updateOAuthConfig')
+            if (updateOAuthConfig) {
+              try {
+                const fullConfig = await context.app.service('site-config').get(siteConfigId)
+                await updateOAuthConfig(fullConfig)
+              } catch (error) {
+                console.error('Error updating OAuth configuration:', error)
+              }
+            }
+          }
+          return context
+        }
+      ]
     },
     error: {
       all: []
