@@ -161,7 +161,10 @@ export const user = (app) => {
         schemaHooks.validateData(userDataValidator),
         schemaHooks.resolveData(userDataResolver),
         uniqueUserValidator,
-        addVerification("auth-management"),
+        iff(
+          context => !context.data.oauthProviders,
+          addVerification("auth-management")
+        ),
       ],
       patch: [
         copyUserBeforePatch,
@@ -200,7 +203,10 @@ export const user = (app) => {
     after: {
       all: [],
       create: [
-        sendVerify(),
+        iff(
+          context => !context.result.oauthProviders,
+          sendVerify()
+        ),
         removeVerification(),
         createDefaultOrganization,
         createNotificationsDoc,
