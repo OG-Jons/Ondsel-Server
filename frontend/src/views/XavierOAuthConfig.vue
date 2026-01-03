@@ -20,11 +20,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
               <v-card-title>Google OAuth</v-card-title>
               <v-card-text>
                 <p class="text-caption text-grey-darken-1 mb-4">
-                  To get your Google OAuth credentials, go to 
-                  <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener noreferrer">
-                    Google Cloud Console
-                  </a>
-                  and create an OAuth 2.0 Client ID. Use the Redirect URI shown below when configuring your app.
+                  See the <a href="https://github.com/FreeCAD/Ondsel-Server/blob/main/docs/admin-panel.md#oauth-configuration" target="_blank" rel="noopener noreferrer">OAuth Configuration documentation</a> for setup instructions. Use the Redirect URI shown below when configuring your OAuth app.
                 </p>
 
                 <v-switch

@@ -115,5 +115,9 @@ The site config service manages platform-wide configuration and branding setting
 - Homepage content (title, markdown content, RSS feed, banner)
 - Default model for new user registrations
 - Desktop app settings (name, protocol, version)
+- OAuth provider configuration:
+  - Provider enable/disable toggles
+  - Client ID and Secret storage
+  - Auto-generated redirect URIs
 
 This service is used by the [Xavier admin panel](admin-panel.md) for site-wide customization.
