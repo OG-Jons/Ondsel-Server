@@ -1,5 +1,6 @@
 <!--
 SPDX-FileCopyrightText: 2024 Ondsel <development@ondsel.com>
+SPDX-FileCopyrightText: 2025 Amritpal Singh <amrit3701@gmail.com>
 
 SPDX-License-Identifier: AGPL-3.0-or-later
 -->
@@ -49,30 +50,62 @@ SPDX-License-Identifier: AGPL-3.0-or-later
                 :disabled="isAuthenticatePending"
               ></v-text-field>
 
-              <v-row>
+              <v-row justify="end" class="mt-1 mb-2">
+                <v-btn
+                  size="x-small"
+                  color="secondary"
+                  variant="text"
+                  @click.stop="openForgotPasswordDialog()">
+                  Forgot Password?
+                </v-btn>
+                <ForgotPasswordDialog
+                  :is-active="isForgotPasswordDialogActive"
+                  ref="forgotPasswordDialog"
+                />
+              </v-row>
+
+              <v-row justify="center" class="mt-2">
                 <v-btn
                   type="submit"
                   v-bind:disabled="isAuthenticatePending"
                   color="primary"
                   variant="elevated"
-                  class="ml-4"
                 >Submit</v-btn>
               </v-row>
 
-              <v-row justify="end">
-                <v-col class="text-right">
-                  <v-btn
-                    size="x-small"
-                    color="secondary"
-                    variant="elevated"
-                    @click.stop="openForgotPasswordDialog()">
-                    Forgot Password?
-                  </v-btn>
-                  <v-spacer></v-spacer>
-                  <ForgotPasswordDialog
-                    :is-active="isForgotPasswordDialogActive"
-                    ref="forgotPasswordDialog"
+              <v-row v-if="isGoogleOAuthEnabled" class="mt-4">
+                <v-col cols="12">
+                  <div class="d-flex align-center my-2">
+                    <v-divider></v-divider>
+                    <span class="mx-4 text-grey">OR</span>
+                    <v-divider></v-divider>
+                  </div>
+                </v-col>
+                <v-col cols="12" class="text-center" style="position: relative;">
+                  <img 
+                    v-if="!isOAuthRedirecting"
+                    src="/img/google-signin-button.svg" 
+                    alt="Sign in with Google"
+                    @click="!isAuthenticatePending && !isOAuthRedirecting && loginWithGoogle()"
+                    :style="{ 
+                      height: '40px', 
+                      width: 'auto', 
+                      cursor: (isAuthenticatePending || isOAuthRedirecting) ? 'not-allowed' : 'pointer',
+                      opacity: (isAuthenticatePending || isOAuthRedirecting) ? 0.6 : 1,
+                      display: 'block',
+                      margin: '0 auto'
+                    }"
+                    class="google-signin-button"
                   />
+                  <div v-else class="d-flex flex-column align-center">
+                    <v-progress-circular
+                      indeterminate
+                      color="primary"
+                      size="40"
+                      width="4"
+                    ></v-progress-circular>
+                    <span class="mt-2 text-caption text-grey">Redirecting to Google...</span>
+                  </div>
                 </v-col>
               </v-row>
             </v-form>
@@ -141,6 +174,7 @@ export default {
       showSnacker: false,
       isForgotPasswordDialogActive: false,
       isRedirectedFromDownloadPage: false,
+      isOAuthRedirecting: false,
     }
   },
   computed: {
@@ -150,6 +184,9 @@ export default {
     bannerMarkdownHtml() {
       return marked.parse(this.siteConfig?.homepageContent?.banner?.content || '');
     },
+    isGoogleOAuthEnabled() {
+      return this.siteConfig?.oauth?.providers?.google?.enabled === true;
+    },
   },
   mounted() {
     resetStores();
@@ -157,6 +194,15 @@ export default {
       if (this.$route.query.redirect_uri.endsWith('/download-and-explore')) {
         this.isRedirectedFromDownloadPage = true;
       }
+    }
+    // Handle OAuth errors
+    if (this.$route.query.error) {
+      this.snackerMsg = decodeURIComponent(this.$route.query.error);
+      this.showSnacker = true;
+      // Clean up URL by removing error query param
+      const query = { ...this.$route.query };
+      delete query.error;
+      this.$router.replace({ query });
     }
   },
   methods: {
@@ -192,7 +238,17 @@ export default {
       this.isForgotPasswordDialogActive = true;
       this.$refs.forgotPasswordDialog.$data.dialog = true;
     },
+    loginWithGoogle() {
+      if (this.isOAuthRedirecting || this.isAuthenticatePending) {
+        return;
+      }
 
+      this.isOAuthRedirecting = true;
+      // Small delay to show loading state before redirect
+      setTimeout(() => {
+        window.location.href = `${import.meta.env.VITE_APP_API_URL}oauth/google`;
+      }, 100);
+    },
   }
 }
 </script>

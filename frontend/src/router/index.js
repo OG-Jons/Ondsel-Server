@@ -9,6 +9,7 @@ import store from '@/store'
 
 import Home from "@/views/Home";
 import SignUp from "@/views/SignUp";
+import OAuthComplete from "@/views/OAuthComplete.vue";
 import ChooseTier from "@/views/ChooseTier.vue";
 import Login from '@/views/Login';
 import Share from '@/views/Share';
@@ -82,6 +83,12 @@ const routes = [
     path: '/signup',
     component: SignUp,
     name: 'SignUp',
+  },
+  {
+    path: '/oauth-complete',
+    component: OAuthComplete,
+    name: 'OAuthComplete',
+    meta: { tryAuth: true },
   },
   {
     path: '/getting-started',
