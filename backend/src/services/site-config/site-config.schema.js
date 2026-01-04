@@ -66,6 +66,7 @@ const oauthProviderConfigSchema = Type.Object({
 const oauthConfigSchema = Type.Object({
   providers: Type.Object({
     google: oauthProviderConfigSchema,
+    github: oauthProviderConfigSchema,
   })
 })
 

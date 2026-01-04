@@ -29,7 +29,7 @@ The Xavier admin panel is a hidden administrative interface for site administrat
 | [Brand Identity](#brand-identity) | `/xavier-branding-logo-87654321` | Logo, favicon, title & social links |
 | [Homepage Content](#homepage-content) | `/xavier-branding-homepage-11223344` | Homepage customization |
 | [Default Model](#default-model) | `/xavier-branding-default-model-55667788` | Default 3D model for new users |
-| [OAuth Configuration](#oauth-configuration) | `/xavier-oauth-12345678` | OAuth provider configuration (Google) |
+| [OAuth Configuration](#oauth-configuration) | `/xavier-oauth-12345678` | OAuth provider configuration (Google, GitHub) |
 | [Software Releases](#software-releases) | `/xavier-9384242` | Manage download links |
 | [Key Documents](#key-documents) | `/xavier-7492783/:name` | Legal document management |
 | [Remove User](#remove-user) | `/xavier-55554337898` | User account deletion |
@@ -146,7 +146,7 @@ Upload and configure the default 3D model that appears for new user registration
 
 **Route:** `/xavier-oauth-12345678`
 
-Configure Google OAuth 2.0 authentication to enable social login for users.
+Configure OAuth 2.0 authentication providers to enable social login for users. Currently supports Google and GitHub OAuth.
 
 ### Configurable Options
 
@@ -158,6 +158,14 @@ Configure Google OAuth 2.0 authentication to enable social login for users.
 | Client Secret | Google OAuth 2.0 Client Secret (masked input) |
 | Redirect URI | Auto-generated redirect URI (read-only, copy to Google Cloud Console) |
 
+#### GitHub OAuth
+| Setting | Description |
+|---------|-------------|
+| Enable GitHub OAuth | Toggle to enable/disable GitHub OAuth login |
+| Client ID | GitHub OAuth App Client ID |
+| Client Secret | GitHub OAuth App Client Secret (masked input) |
+| Redirect URI | Auto-generated redirect URI (read-only, copy to GitHub OAuth App settings) |
+
 ### Usage
 
 1. **For Google OAuth:**
@@ -168,17 +176,25 @@ Configure Google OAuth 2.0 authentication to enable social login for users.
    - Enter Client ID and Client Secret
    - Click **Save** to apply changes
 
+2. **For GitHub OAuth:**
+   - Create a GitHub OAuth App in your GitHub organization settings (Settings → Developer settings → OAuth Apps)
+   - Set the Authorization callback URL to match the displayed Redirect URI
+   - Enable GitHub OAuth toggle
+   - Enter Client ID and Client Secret
+   - Click **Save** to apply changes
+
 ### Features
-- Enable/disable toggle for Google OAuth
+- Enable/disable toggles for each OAuth provider (Google, GitHub)
 - Secure credential storage (secrets are masked)
-- Auto-generated redirect URI
-- "Sign in with Google" button appears on login page when enabled
+- Auto-generated redirect URIs for each provider
+- "Sign in with Google" button appears on login page when Google OAuth enabled
+- "Sign in with GitHub" button appears on login page when GitHub OAuth enabled
 
 ### Security Notes
 - OAuth credentials are stored securely in the site-config service
 - Client secrets are never displayed in plain text
-- Disabling Google OAuth prevents new Google OAuth logins but doesn't affect existing linked accounts
-- Users with Google OAuth-only accounts can still use password reset to regain access
+- Disabling an OAuth provider prevents new logins via that provider but doesn't affect existing linked accounts
+- Users with OAuth-only accounts can still use password reset to regain access
 
 ---
 
