@@ -43,6 +43,9 @@ export const userSchema = Type.Object(
       google: Type.Optional(Type.Object({
         id: Type.String(),
       })),
+      github: Type.Optional(Type.Object({
+        id: Type.String(),
+      })),
     })),
     name: Type.String(),
     firstName: Type.String(), // deprecated
@@ -193,6 +196,7 @@ export const userQuerySchema = Type.Intersect(
       'publicInfo': Type.Optional(Type.String()),
       'getOnlyAccessTokenUser': Type.Optional(Type.String()),
       'oauthProviders.google.id': Type.Optional(Type.String()),
+      'oauthProviders.github.id': Type.Optional(Type.String()),
     }, { additionalProperties: false })
   ],
   { additionalProperties: false }
