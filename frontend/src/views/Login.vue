@@ -81,47 +81,47 @@ SPDX-License-Identifier: AGPL-3.0-or-later
                     <v-divider></v-divider>
                   </div>
                 </v-col>
+              </v-row>
+              <div v-if="isOAuthRedirecting && (isGoogleOAuthEnabled || isGitHubOAuthEnabled)" class="d-flex flex-column align-center justify-center mt-4" style="min-height: 40px;">
+                <v-progress-circular
+                  indeterminate
+                  color="primary"
+                  size="40"
+                  width="4"
+                ></v-progress-circular>
+                <span class="mt-2 text-caption text-grey">Redirecting to {{ oAuthRedirectingProvider === 'google' ? 'Google' : 'GitHub' }}...</span>
+              </div>
+              <v-row v-else-if="isGoogleOAuthEnabled || isGitHubOAuthEnabled">
                 <v-col v-if="isGoogleOAuthEnabled" cols="12" class="text-center" style="position: relative;">
                   <img 
-                    v-if="!isOAuthRedirecting"
                     src="/img/google-signin-button.svg" 
                     alt="Sign in with Google"
-                    @click="!isAuthenticatePending && !isOAuthRedirecting && loginWithOAuth('google')"
+                    @click="!isAuthenticatePending && loginWithOAuth('google')"
                     :style="{ 
                       height: '40px', 
                       width: 'auto', 
-                      cursor: (isAuthenticatePending || isOAuthRedirecting) ? 'not-allowed' : 'pointer',
-                      opacity: (isAuthenticatePending || isOAuthRedirecting) ? 0.6 : 1,
+                      cursor: isAuthenticatePending ? 'not-allowed' : 'pointer',
+                      opacity: isAuthenticatePending ? 0.6 : 1,
                       display: 'block',
                       margin: '0 auto'
                     }"
                     class="google-signin-button"
                   />
-                  <div v-else-if="oAuthRedirectingProvider === 'google'" class="d-flex flex-column align-center">
-                    <v-progress-circular
-                      indeterminate
-                      color="primary"
-                      size="40"
-                      width="4"
-                    ></v-progress-circular>
-                    <span class="mt-2 text-caption text-grey">Redirecting to Google...</span>
-                  </div>
                 </v-col>
                 <v-col v-if="isGitHubOAuthEnabled" cols="12" class="text-center" style="position: relative;">
                   <v-btn
-                    v-if="!isOAuthRedirecting"
                     variant="outlined"
                     size="large"
-                    :disabled="isAuthenticatePending || isOAuthRedirecting"
-                    @click="!isAuthenticatePending && !isOAuthRedirecting && loginWithOAuth('github')"
+                    :disabled="isAuthenticatePending"
+                    @click="!isAuthenticatePending && loginWithOAuth('github')"
                     :style="{ 
                       height: '40px',
                       width: 'auto',
-                      cursor: (isAuthenticatePending || isOAuthRedirecting) ? 'not-allowed' : 'pointer',
-                      opacity: (isAuthenticatePending || isOAuthRedirecting) ? 0.6 : 1,
+                      cursor: isAuthenticatePending ? 'not-allowed' : 'pointer',
+                      opacity: isAuthenticatePending ? 0.6 : 1,
                       display: 'inline-flex',
                       backgroundColor: '#FFFFFF',
-                      borderColor: '#dadce0',
+                      borderColor: '#747775',
                       borderWidth: '1px',
                       borderStyle: 'solid',
                       color: '#3c4043 !important',
@@ -136,15 +136,6 @@ SPDX-License-Identifier: AGPL-3.0-or-later
                     <v-icon start size="18" style="margin-right: 10px; color: #24292f;">mdi-github</v-icon>
                     <span style="color: #3c4043;">Sign in with GitHub</span>
                   </v-btn>
-                  <div v-else-if="oAuthRedirectingProvider === 'github'" class="d-flex flex-column align-center">
-                    <v-progress-circular
-                      indeterminate
-                      color="primary"
-                      size="40"
-                      width="4"
-                    ></v-progress-circular>
-                    <span class="mt-2 text-caption text-grey">Redirecting to GitHub...</span>
-                  </div>
                 </v-col>
               </v-row>
             </v-form>

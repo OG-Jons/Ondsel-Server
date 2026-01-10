@@ -177,7 +177,7 @@ Configure OAuth 2.0 authentication providers to enable social login for users. C
    - Click **Save** to apply changes
 
 2. **For GitHub OAuth:**
-   - Create a GitHub OAuth App in your GitHub organization settings (Settings → Developer settings → OAuth Apps)
+   - Create a GitHub OAuth App in your GitHub organization settings (Settings → Developer settings → [OAuth Apps](https://github.com/settings/developers))
    - Set the Authorization callback URL to match the displayed Redirect URI
    - Enable GitHub OAuth toggle
    - Enter Client ID and Client Secret
