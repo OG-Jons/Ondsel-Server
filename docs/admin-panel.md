@@ -29,6 +29,7 @@ The Xavier admin panel is a hidden administrative interface for site administrat
 | [Brand Identity](#brand-identity) | `/xavier-branding-logo-87654321` | Logo, favicon, title & social links |
 | [Homepage Content](#homepage-content) | `/xavier-branding-homepage-11223344` | Homepage customization |
 | [Default Model](#default-model) | `/xavier-branding-default-model-55667788` | Default 3D model for new users |
+| [OAuth Configuration](#oauth-configuration) | `/xavier-oauth-12345678` | OAuth provider configuration (Google) |
 | [Software Releases](#software-releases) | `/xavier-9384242` | Manage download links |
 | [Key Documents](#key-documents) | `/xavier-7492783/:name` | Legal document management |
 | [Remove User](#remove-user) | `/xavier-55554337898` | User account deletion |
@@ -138,6 +139,46 @@ Upload and configure the default 3D model that appears for new user registration
 2. Select a new FCStd file to upload
 3. Click **Upload Model** to process and save
 4. Thumbnail is automatically generated from the model
+
+---
+
+## OAuth Configuration
+
+**Route:** `/xavier-oauth-12345678`
+
+Configure Google OAuth 2.0 authentication to enable social login for users.
+
+### Configurable Options
+
+#### Google OAuth
+| Setting | Description |
+|---------|-------------|
+| Enable Google OAuth | Toggle to enable/disable Google OAuth login |
+| Client ID | Google OAuth 2.0 Client ID from Google Cloud Console |
+| Client Secret | Google OAuth 2.0 Client Secret (masked input) |
+| Redirect URI | Auto-generated redirect URI (read-only, copy to Google Cloud Console) |
+
+### Usage
+
+1. **For Google OAuth:**
+   - Obtain OAuth 2.0 credentials from [Google Cloud Console](https://console.cloud.google.com/)
+   - See the [FeathersJS Google OAuth setup guide](https://feathersjs.com/cookbook/authentication/google#application-client-and-secret) for detailed steps on creating OAuth client credentials
+   - Create OAuth 2.0 credentials with authorized redirect URI matching the displayed Redirect URI
+   - Enable Google OAuth toggle
+   - Enter Client ID and Client Secret
+   - Click **Save** to apply changes
+
+### Features
+- Enable/disable toggle for Google OAuth
+- Secure credential storage (secrets are masked)
+- Auto-generated redirect URI
+- "Sign in with Google" button appears on login page when enabled
+
+### Security Notes
+- OAuth credentials are stored securely in the site-config service
+- Client secrets are never displayed in plain text
+- Disabling Google OAuth prevents new Google OAuth logins but doesn't affect existing linked accounts
+- Users with Google OAuth-only accounts can still use password reset to regain access
 
 ---
 

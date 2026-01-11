@@ -16,6 +16,7 @@ export const authManagementActionTypeMap = {
 }
 export const resetPwdGENERIC = 'resetPwd';
 export const verifySignupGENERIC = 'verifySignup';
+export const oauthSignupWelcome = 'oauthSignupWelcome';
 
 export const authManagementActionType = StringEnum(
   [

@@ -1,4 +1,5 @@
 // SPDX-FileCopyrightText: 2024 Ondsel <development@ondsel.com>
+// SPDX-FileCopyrightText: 2025 Amritpal Singh <amrit3701@gmail.com>
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
@@ -48,6 +49,7 @@ import {handleStepFileAsModelCommand} from "./handle-step-file-as-model.js";
 import {fixedSharedWithMeSchemasCommand} from "./fixed-shared-with-me-schemas.command.js";
 import {addDefaultAdminUserCommand} from "./create-default-admin-user.command.js";
 import {createDefaultSiteConfigCommand} from "./create-default-site-config.command.js";
+import {addOauthToSiteConfigCommand} from "./add-oauth-to-site-config.command.js";
 import {createDefaultPublisherEntriesCommand} from "./create-default-publisher-entries.command.js";
 import {migrateOndselToAdminOrganizationCommand} from "./migrate-ondsel-to-admin-organization.command.js";
 
@@ -199,6 +201,9 @@ async function runMigration() {
       break;
     case 'createDefaultSiteConfig':
       await createDefaultSiteConfigCommand(app);
+      break;
+    case 'addOauthToSiteConfig':
+      await addOauthToSiteConfigCommand(app);
       break;
     case 'createDefaultPublisherEntries':
       await createDefaultPublisherEntriesCommand(app);

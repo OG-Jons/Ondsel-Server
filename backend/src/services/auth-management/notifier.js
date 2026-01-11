@@ -4,7 +4,7 @@
 
 // services/auth-management/notifier.js
 
-import {authManagementActionTypeMap, resetPwdGENERIC, verifySignupGENERIC} from "./auth-management.schema.js";
+import {authManagementActionTypeMap, resetPwdGENERIC, verifySignupGENERIC, oauthSignupWelcome} from "./auth-management.schema.js";
 import {BadRequest} from "@feathersjs/errors";
 import {orgInviteStateTypeMap} from "../org-invites/org-invites.subdocs.schema.js";
 import { siteConfigId } from "../site-config/site-config.schema.js";
@@ -76,6 +76,17 @@ export const notifier = (app) => {
           subject: `Welcome to ${siteConfig.siteTitle}!`,
           text: `Verification of ${user.email} is complete. Welcome to ${siteConfig.siteTitle}!\n\n`
             + socialLinksText
+            + `Yours sincerely,\n`
+            + `Team ${siteConfig.siteTitle}`,
+        });
+      case oauthSignupWelcome:
+        const oauthSocialLinksText = buildSocialLinksText(siteConfig);
+        return sendEmail({
+          from: app.get('smtpFrom'),
+          to: user.email,
+          subject: `Welcome to ${siteConfig.siteTitle}!`,
+          text: `Welcome to ${siteConfig.siteTitle}! Your account has been created successfully.\n\n`
+            + oauthSocialLinksText
             + `Yours sincerely,\n`
             + `Team ${siteConfig.siteTitle}`,
         });

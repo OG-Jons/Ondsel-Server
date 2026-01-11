@@ -1,4 +1,5 @@
 // SPDX-FileCopyrightText: 2024 Ondsel <development@ondsel.com>
+// SPDX-FileCopyrightText: 2025 Amritpal Singh <amrit3701@gmail.com>
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
@@ -8,6 +9,7 @@ import store from '@/store'
 
 import Home from "@/views/Home";
 import SignUp from "@/views/SignUp";
+import OAuthComplete from "@/views/OAuthComplete.vue";
 import ChooseTier from "@/views/ChooseTier.vue";
 import Login from '@/views/Login';
 import Share from '@/views/Share';
@@ -52,6 +54,7 @@ import XavierBrandingHub from "@/views/XavierBrandingHub.vue";
 import XavierBrandingIdentity from "@/views/XavierBrandingIdentity.vue";
 import XavierBrandingHomepage from "@/views/XavierBrandingHomepage.vue";
 import XavierBrandingDefaultModel from "@/views/XavierBrandingDefaultModel.vue";
+import XavierOAuthConfig from "@/views/XavierOAuthConfig.vue";
 
 
 const isWindowLoadedInIframe = () => {
@@ -80,6 +83,12 @@ const routes = [
     path: '/signup',
     component: SignUp,
     name: 'SignUp',
+  },
+  {
+    path: '/oauth-complete',
+    component: OAuthComplete,
+    name: 'OAuthComplete',
+    meta: { tryAuth: true },
   },
   {
     path: '/getting-started',
@@ -253,6 +262,12 @@ const routes = [
     path: '/xavier-branding-default-model-55667788',
     component: XavierBrandingDefaultModel,
     name: 'XavierBrandingDefaultModel',
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/xavier-oauth-12345678',
+    component: XavierOAuthConfig,
+    name: 'XavierOAuthConfig',
     meta: { requiresAuth: true },
   },
   {

@@ -1,4 +1,5 @@
 // SPDX-FileCopyrightText: 2024 Ondsel <development@ondsel.com>
+// SPDX-FileCopyrightText: 2025 Amritpal Singh <amrit3701@gmail.com>
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
@@ -6,6 +7,7 @@
 import { authenticate } from '@feathersjs/authentication'
 import swagger from 'feathers-swagger';
 import {iff, preventChanges} from 'feathers-hooks-common'
+import { BadRequest } from '@feathersjs/errors'
 import { hooks as schemaHooks } from '@feathersjs/schema'
 import {
   userDataValidator,
@@ -26,6 +28,7 @@ import { userPath, userMethods } from './users.shared.js'
 import { siteConfigId } from '../site-config/site-config.schema.js'
 import {addVerification, removeVerification} from "feathers-authentication-management";
 import {notifier} from "../auth-management/notifier.js";
+import {oauthSignupWelcome} from "../auth-management/auth-management.schema.js";
 import {isAdminUser, isEndUser} from "../../hooks/is-user.js";
 import {buildOrganizationSummary} from "../organizations/organizations.distrib.js";
 import {OrganizationTypeMap} from "../organizations/organizations.subdocs.schema.js";
@@ -40,6 +43,9 @@ import {changeEmailNotification} from "./commands/changeEmailNotification.js";
 import {verifySiteAdministrativePower} from "../hooks/administration.js";
 import {removeUser} from "./commands/removeUser.js";
 import { handleQueryArgs } from "./helpers.js";
+import { AccountEventTypeMap } from "../account-event/account-event.schema.js";
+import { SubscriptionTypeMap, SubscriptionTermTypeMap } from "./users.subdocs.schema.js";
+import { verifyOAuthCompletionSignature } from "../../authentication/oauth-helper.js";
 
 export * from './users.class.js'
 export * from './users.schema.js'
@@ -136,6 +142,17 @@ export const user = (app) => {
   app.service(userPath).hooks({
     around: {
       all: [
+        // Preserve oauthAccessToken through schema resolvers
+        // Schema resolvers filter out fields not in the schema, so we temporarily store it in params
+        // and restore it after all resolvers have run (must be placed first in array to run last when unwinding)
+        async (context, next) => {
+          await next()
+          if (context.params._oauthAccessToken) {
+            context.result.oauthAccessToken = context.params._oauthAccessToken
+            delete context.params._oauthAccessToken
+          }
+          return context
+        },
         schemaHooks.resolveExternal(userExternalResolver),
         handleQueryArgs(),
         handlePublicOnlyQuery(userPublicFields),
@@ -158,10 +175,14 @@ export const user = (app) => {
         detectUsernameInId
       ],
       create: [
+        validateOAuthCompletionData,
         schemaHooks.validateData(userDataValidator),
         schemaHooks.resolveData(userDataResolver),
         uniqueUserValidator,
-        addVerification("auth-management"),
+        iff(
+          context => !context.data.oauthProviders,
+          addVerification("auth-management")
+        ),
       ],
       patch: [
         copyUserBeforePatch,
@@ -200,11 +221,33 @@ export const user = (app) => {
     after: {
       all: [],
       create: [
-        sendVerify(),
+        generateOAuthUserToken,
+        // Store oauthAccessToken in params to preserve it through schema resolvers
+        // Schema resolvers will strip it from result, so we restore it in around.all hook
+        async (context) => {
+          if (context.result.oauthAccessToken) {
+            context.params._oauthAccessToken = context.result.oauthAccessToken
+          }
+          return context
+        },
+        iff(
+          context => !context.result.oauthProviders,
+          sendVerify()
+        ),
         removeVerification(),
         createDefaultOrganization,
         createNotificationsDoc,
         createSampleModels,
+        // Upgrade OAuth users to Solo tier (email is already verified via OAuth provider)
+        iff(
+          context => !!context.result.oauthProviders,
+          upgradeOAuthUserToSoloTier
+        ),
+        // Send welcome email to OAuth users (similar to email verification success email)
+        iff(
+          context => !!context.result.oauthProviders,
+          sendOAuthWelcomeEmail
+        ),
       ],
       patch: [
         distributeUserSummariesHook
@@ -216,6 +259,183 @@ export const user = (app) => {
   })
 }
 
+/**
+ * Validate OAuth completion data for OAuth user creation
+ * Verifies HMAC signature and stores data temporarily for JWT token generation after creation
+ * 
+ * Security: This runs before schema validation, so we must validate:
+ * - Input types and formats
+ * - Base64 encoding validity
+ * - Data size limits
+ * - HMAC signature (prevents tampering)
+ * - Expiration (prevents replay attacks)
+ */
+const validateOAuthCompletionData = async (context) => {
+  if (!context.data.oauthProviders || !context.data.oauthCompletionSignature || !context.data.oauthCompletionExpires || !context.data.oauthCompletionData) {
+    return context
+  }
+
+  const { oauthCompletionSignature, oauthCompletionExpires, oauthCompletionData } = context.data
+
+  // Type and format validation
+  if (typeof oauthCompletionSignature !== 'string' || oauthCompletionSignature.length === 0) {
+    throw new BadRequest('Invalid signup link. Please try signing in again.')
+  }
+  if (typeof oauthCompletionExpires !== 'number' || oauthCompletionExpires <= 0) {
+    throw new BadRequest('Invalid signup link. Please try signing in again.')
+  }
+  if (typeof oauthCompletionData !== 'string' || oauthCompletionData.length === 0) {
+    throw new BadRequest('Invalid signup link. Please try signing in again.')
+  }
+
+  // Size limit check (prevent DoS via large payloads)
+  const MAX_BASE64_SIZE = 10 * 1024 // 10KB
+  if (oauthCompletionData.length > MAX_BASE64_SIZE) {
+    throw new BadRequest('Invalid signup link. Please try signing in again.')
+  }
+
+  // Verify signature and expiration before parsing
+  const secret = context.app.get('authentication').secret
+  const verificationResult = verifyOAuthCompletionSignature(oauthCompletionData, oauthCompletionExpires, oauthCompletionSignature, secret)
+  if (!verificationResult.valid) {
+    throw new BadRequest(verificationResult.error)
+  }
+
+  // Validate decoded data structure
+  let decodedData
+  try {
+    const decodedBuffer = Buffer.from(oauthCompletionData, 'base64')
+    const decodedString = decodedBuffer.toString('utf-8')
+    decodedData = JSON.parse(decodedString)
+    
+    if (!decodedData || typeof decodedData !== 'object') {
+      throw new BadRequest('Invalid signup link. Please try signing in again.')
+    }
+    if (typeof decodedData.email !== 'string' || !decodedData.email.includes('@')) {
+      throw new BadRequest('Invalid signup link. Please try signing in again.')
+    }
+    if (typeof decodedData.providerId !== 'string' || decodedData.providerId.length === 0) {
+      throw new BadRequest('Invalid signup link. Please try signing in again.')
+    }
+    if (typeof decodedData.provider !== 'string' || decodedData.provider.length === 0) {
+      throw new BadRequest('Invalid signup link. Please try signing in again.')
+    }
+  } catch (error) {
+    if (error instanceof BadRequest) {
+      throw error
+    }
+    throw new BadRequest('Invalid signup link. Please try signing in again.')
+  }
+
+  // Ensure email and providerId match signed OAuth data (prevents tampering)
+  if (context.data.email && context.data.email !== decodedData.email) {
+    throw new BadRequest('Invalid signup link. Please try signing in again.')
+  }
+  if (context.data.oauthProviders && context.data.oauthProviders[decodedData.provider]) {
+    const providedProviderId = context.data.oauthProviders[decodedData.provider].id
+    if (providedProviderId && providedProviderId !== decodedData.providerId) {
+      throw new BadRequest('Invalid signup link. Please try signing in again.')
+    }
+  }
+
+  // Store signature data temporarily in params for after-create hook to generate JWT
+  context.params.oauthCompletionData = {
+    signature: oauthCompletionSignature,
+    expires: oauthCompletionExpires,
+    data: oauthCompletionData
+  }
+
+  // Override with signed OAuth data (source of truth)
+  context.data.email = decodedData.email
+  if (!context.data.oauthProviders) {
+    context.data.oauthProviders = {}
+  }
+  context.data.oauthProviders[decodedData.provider] = {
+    id: decodedData.providerId
+  }
+
+  // Remove verification fields from data (they shouldn't be stored in user document)
+  delete context.data.oauthCompletionSignature
+  delete context.data.oauthCompletionExpires
+  delete context.data.oauthCompletionData
+
+  return context
+}
+
+/**
+ * Generate JWT token for OAuth user after creation
+ */
+const generateOAuthUserToken = async (context) => {
+  if (!context.params.oauthCompletionData || !context.result.oauthProviders) {
+    return context
+  }
+
+  try {
+    const authenticationService = context.app.service('authentication')
+    const userId = context.result._id.toString()
+    // FeathersJS JWT strategy requires 'sub' (subject) field for user ID
+    const payload = { sub: userId }
+    const accessToken = await authenticationService.createAccessToken(payload)
+    context.result.oauthAccessToken = accessToken
+  } catch (error) {
+    console.error('Failed to generate OAuth user token:', error)
+    // Don't throw - user creation succeeded, frontend has fallback to redirect to login
+  }
+
+  return context
+}
+
+/**
+ * Upgrade OAuth user from unverified to solo tier
+ * OAuth users are auto-verified (email verified by OAuth provider)
+ * Uses the same account-event flow as manual signup users after email verification
+ */
+const upgradeOAuthUserToSoloTier = async (context) => {
+  try {
+    const accountEventService = context.app.service('account-event')
+    await accountEventService.create({
+      event: AccountEventTypeMap.startSoloSubscriptionFromUnverified,
+      userId: context.result._id.toString(),
+      detail: {
+        subscription: SubscriptionTypeMap.solo,
+        term: SubscriptionTermTypeMap.monthly,
+        currentSubscription: SubscriptionTypeMap.unverified
+      },
+      note: 'OAuth user auto-verified and upgraded to Solo tier'
+    }, { user: context.result })
+  } catch (error) {
+    // Log detailed error for admin visibility - user creation succeeded, tier upgrade can be retried manually
+    console.error('Failed to upgrade OAuth user to Solo tier:', {
+      userId: context.result._id.toString(),
+      email: context.result.email,
+      error: error.message,
+      stack: error.stack
+    })
+    // Don't throw - user creation succeeded, tier upgrade failure is non-blocking
+  }
+
+  return context
+}
+
+/**
+ * Send welcome email to OAuth users after account creation
+ * Uses OAuth welcome email template
+ */
+const sendOAuthWelcomeEmail = async (context) => {
+  const notifierInst = notifier(context.app)
+
+  const users = Array.isArray(context.result)
+    ? context.result
+    : [context.result]
+
+  await Promise.all(
+    users
+      .filter(user => user.oauthProviders)
+      .map(async user => notifierInst(oauthSignupWelcome, user))
+  )
+
+  return context
+}
 
 const createSampleModels = async (context) => {
   const { app } = context;

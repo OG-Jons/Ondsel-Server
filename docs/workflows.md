@@ -7,7 +7,9 @@ SPDX-License-Identifier: AGPL-3.0-or-later
 # Different Workflows:
 
 ## Signup Workflow:
-The signup workflow in Lens involves several steps and services working together:
+The signup workflow in Lens involves several steps and services working together. Users can sign up via two methods:
+
+### Email/Password Signup:
 
 1. User Registration:
    - User provides email, password and other required details
@@ -24,11 +26,49 @@ The signup workflow in Lens involves several steps and services working together
    - After successful email verification, user subscription tier is upgraded from unverified to solo
    - Frontend redirects to onboarding download/explore lens page
 
+### OAuth Signup:
+
+1. OAuth Authentication:
+   - User clicks "Sign in with [Provider]" button on login page
+   - User is redirected to backend OAuth endpoint (`/oauth/:provider`)
+   - Backend redirects user to OAuth provider with authentication parameters
+   - User authenticates with OAuth provider
+   - OAuth provider redirects back to backend callback endpoint (`/oauth/:provider/callback`)
+   - System receives OAuth profile data (email, name, provider ID)
+
+2. User Identification:
+   - If user exists with matching provider ID: login directly
+   - If user exists with matching email (but not provider ID): auto-link provider and login
+   - If new user: proceed to OAuth completion page
+
+3. OAuth Completion (New Users Only):
+   - User completes signup form with:
+     - Email (read-only, from OAuth)
+     - Name (pre-filled from OAuth, editable)
+     - Username (pre-filled, editable)
+     - Usage type selection
+     - Terms of Service and Privacy Policy checkboxes (user indicates acceptance)
+   - System creates user account with OAuth provider linked
+   - User is automatically marked as verified (OAuth providers verify emails)
+   - Authentication Service generates JWT token
+
+4. Post-Creation Setup:
+   - System automatically creates personal organization
+   - System automatically creates default workspace
+   - System automatically creates sample models
+   - User subscription tier is set to solo (no verification needed)
+   - Frontend accepts Terms of Service and Privacy Policy agreements (API call)
+
+5. Login & Redirect:
+   - Frontend uses JWT token to authenticate user
+   - Frontend redirects to onboarding download/explore lens page
+
 The workflow utilizes multiple services including:
 - Users Service: For user account management
 - Organizations Service: For organization creation and management
 - Models/Files/Uploads Service: For sample model creation
 - Account Events Service: For tracking signup and account changes
+- Authentication Service: For OAuth provider authentication and token management
 
 
 ## Changing Subscription Tier:

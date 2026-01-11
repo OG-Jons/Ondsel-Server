@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2024 Ondsel <development@ondsel.com>
+// SPDX-FileCopyrightText: 2025 Amritpal Singh <amrit3701@gmail.com>
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
@@ -84,6 +84,16 @@ class SiteConfig extends BaseModel {
         enabledOpenInDesktopApp: false,
         protocol: 'freecad:',
       },
+      oauth: {
+        providers: {
+          google: {
+            enabled: false,
+            clientId: '',
+            clientSecret: '',
+            redirectUri: '',
+          },
+        }
+      },
       customized: {
         logoUrl: false,
         faviconUrl: false,
@@ -93,6 +103,7 @@ class SiteConfig extends BaseModel {
         homepageContent: false,
         defaultModel: false,
         desktopApp: false,
+        oauth: false,
       }
     }
   }

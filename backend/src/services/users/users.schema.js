@@ -39,6 +39,11 @@ export const userSchema = Type.Object(
     notificationsId: ObjectIdSchema(),
     organizations: Type.Array(UserOrgSchema),
     password: Type.Optional(Type.String()),
+    oauthProviders: Type.Optional(Type.Object({
+      google: Type.Optional(Type.Object({
+        id: Type.String(),
+      })),
+    })),
     name: Type.String(),
     firstName: Type.String(), // deprecated
     lastName: Type.String(), // deprecated
@@ -96,12 +101,20 @@ export const userExternalResolver = resolve({
 })
 
 // Schema for creating new entries
-export const userDataSchema = Type.Pick(userSchema, ['email', 'password', 'username', 'name', 'usageType'], {
+export const userDataSchema = Type.Pick(userSchema, ['email', 'password', 'username', 'name', 'usageType', 'oauthProviders'], {
   $id: 'UserData'
 })
 export const userDataValidator = getValidator(userDataSchema, dataValidator)
 export const userDataResolver = resolve({
-  password: passwordHash({ strategy: 'local' }),
+  password: async (value, message, context) => {
+    // Only hash password if provided (OAuth users may not have password)
+    if (!value) {
+      return undefined
+    }
+    // Use passwordHash resolver for password hashing
+    const hashResolver = passwordHash({ strategy: 'local' })
+    return await hashResolver(value, message, context)
+  },
   createdAt: async () => Date.now(),
   updatedAt: async () => Date.now(),
   usernameHash: async (_value, message, _context) => {
@@ -110,6 +123,13 @@ export const userDataResolver = resolve({
   tier: async () => SubscriptionTypeMap.unverified,
   constraint: async () => null, // DO NOT STORE constraints; they are to be derived
   nextTier: async () => null,
+  isVerified: async (_value, message, _context) => {
+    // OAuth users are auto-verified (OAuth providers verify emails)
+    if (message.oauthProviders) {
+      return true
+    }
+    return false
+  },
   userAccounting: async (_value, _message, _context) => {
     return {
       ledgerBalances: {
@@ -172,6 +192,7 @@ export const userQuerySchema = Type.Intersect(
     Type.Object({
       'publicInfo': Type.Optional(Type.String()),
       'getOnlyAccessTokenUser': Type.Optional(Type.String()),
+      'oauthProviders.google.id': Type.Optional(Type.String()),
     }, { additionalProperties: false })
   ],
   { additionalProperties: false }

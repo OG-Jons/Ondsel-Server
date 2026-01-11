@@ -74,9 +74,10 @@ app.configure(swagger({
 
 }));
 
+app.configure(services)
+
 app.configure(authentication)
 
-app.configure(services)
 app.configure(channels)
 
 // Custom middlewares

@@ -1,5 +1,6 @@
 <!--
 SPDX-FileCopyrightText: 2024 Ondsel <development@ondsel.com>
+SPDX-FileCopyrightText: 2025 Amritpal Singh <amrit3701@gmail.com>
 
 SPDX-License-Identifier: AGPL-3.0-or-later
 -->
@@ -15,6 +16,13 @@ SPDX-License-Identifier: AGPL-3.0-or-later
           @click="$router.push({ name: 'XavierBrandingHub', params: {} })"
         >
           Branding Configuration
+        </v-list-item>
+        <v-list-item
+          color="link"
+          class="text-decoration-underline"
+          @click="$router.push({ name: 'XavierOAuthConfig', params: {} })"
+        >
+          OAuth Configuration
         </v-list-item>
         <v-list-item
           color="link"
