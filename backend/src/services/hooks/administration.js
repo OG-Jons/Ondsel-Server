@@ -1,4 +1,5 @@
 // SPDX-FileCopyrightText: 2024 Ondsel <development@ondsel.com>
+// SPDX-FileCopyrightText: 2026 Amritpal Singh <amrit3701@gmail.com>
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
@@ -43,4 +44,14 @@ export const verifySiteAdministrativePower = async context => {
     throw new NotAuthenticated(reason);
   }
   return context;
+}
+
+/**
+ * External resolver helper for admin-only fields
+ * Returns undefined for non-admin users, value for admins
+ */
+export const adminOnlyField = async (value, data, context) => {
+  if (!context.params.user) return undefined
+  const [isAdmin] = await isSiteAdministrator(context.params, context.app)
+  return isAdmin ? value : undefined
 }
