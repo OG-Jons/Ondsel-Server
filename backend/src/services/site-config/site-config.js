@@ -6,13 +6,17 @@
 import { authenticate } from '@feathersjs/authentication'
 import { hooks as schemaHooks } from '@feathersjs/schema'
 import { disallow } from 'feathers-hooks-common'
+import swagger from 'feathers-swagger'
 import {
   siteConfigPatchResolver,
   siteConfigPatchValidator,
   siteConfigQueryResolver,
   siteConfigQueryValidator,
   siteConfigResolver,
-  siteConfigExternalResolver
+  siteConfigExternalResolver,
+  siteConfigSchema,
+  siteConfigPatchSchema,
+  siteConfigQuerySchema
 } from './site-config.schema.js'
 import { SiteConfigService, getOptions } from './site-config.class.js'
 import { siteConfigPath, siteConfigMethods } from './site-config.shared.js'
@@ -86,6 +90,15 @@ export const siteConfig = (app) => {
           req.feathers.defaultModelThumbnailFile = defaultModelThumbnailFile
         }
 
+        // Remove file field names from req.body to prevent validation errors if they are sent as empty values e.g. from Swagger UI
+        if (req.body) {
+          for (const field of ['logoFile', 'faviconFile', 'defaultModelFile', 'defaultModelThumbnailFile']) {
+            if (field in req.body) {
+              delete req.body[field]
+            }
+          }
+        }
+
         next()
       })
     },
@@ -94,7 +107,82 @@ export const siteConfig = (app) => {
       // A list of all methods this service exposes externally
       methods: siteConfigMethods,
       // You can add additional custom events to be sent to clients here
-      events: []
+      events: [],
+      docs: swagger.createSwaggerServiceOptions({
+        schemas: { siteConfigSchema, siteConfigPatchSchema, siteConfigQuerySchema },
+        docs: {
+          description: 'Site configuration service for platform branding, homepage content, OAuth settings, and default model configuration',
+          idType: 'string',
+          securities: ['all'],
+          operations: {
+            get: {
+              "description": "Get site configuration. <ul><li><strong>Public access</strong> (default ID 000000000000000000000000, no authentication): Returns filtered data with sensitive fields hidden (OAuth secrets, admin-only fields excluded).</li><li><strong>Authenticated site administrator</strong>: Returns full configuration including all sensitive and admin-only fields.</li><li><strong>Other IDs</strong>: Requires authentication and site administrator privileges.</li></ul>",
+              "parameters": [
+                {
+                  "description": "Site config ID (use 000000000000000000000000 for default config)",
+                  "in": "path",
+                  "name": "_id",
+                  "schema": {
+                    "type": "string"
+                  },
+                  "required": true,
+                },
+              ],
+            },
+            patch: {
+              "description": "Update site configuration. Supports multipart/form-data for file uploads (logoFile, faviconFile, defaultModelFile, defaultModelThumbnailFile) or JSON for other fields. Requires authentication and site administrator privileges. Updates are broadcast to all users via real-time events.",
+              "parameters": [
+                {
+                  "description": "Site config ID (use 000000000000000000000000 for default config)",
+                  "in": "path",
+                  "name": "_id",
+                  "schema": {
+                    "type": "string"
+                  },
+                  "required": true,
+                },
+              ],
+              "requestBody": {
+                "description": "Site configuration updates. <ul><li><strong>multipart/form-data</strong>: Use for file uploads (logoFile, faviconFile, defaultModelFile, defaultModelThumbnailFile). Other fields like siteTitle, copyrightText, etc. can also be included as form fields in the same request.</li><li><strong>application/json</strong>: Use for field updates without files.</li></ul>",
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/SiteConfigPatch"
+                    }
+                  },
+                  "multipart/form-data": {
+                    "schema": {
+                      "type": "object",
+                      "properties": {
+                        "logoFile": {
+                          "type": "string",
+                          "format": "binary",
+                          "description": "Logo file (PNG, JPG, SVG, ICO)"
+                        },
+                        "faviconFile": {
+                          "type": "string",
+                          "format": "binary",
+                          "description": "Favicon file (PNG, JPG, SVG, ICO)"
+                        },
+                        "defaultModelFile": {
+                          "type": "string",
+                          "format": "binary",
+                          "description": "Default model file (.FCStd)"
+                        },
+                        "defaultModelThumbnailFile": {
+                          "type": "string",
+                          "format": "binary",
+                          "description": "Default model thumbnail file (PNG)"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      })
     })
 
   // Add publish configuration for real-time updates
