@@ -44,37 +44,14 @@ export function verifyOAuthCompletionSignature(encodedData, expires, signature, 
 }
 
 /**
- * Google OAuth Strategy
+ * Base OAuth Strategy with common functionality
  */
-export class GoogleStrategy extends OAuthStrategy {
+class BaseOAuthStrategy extends OAuthStrategy {
   /**
-   * Extract Google provider ID from profile
+   * Extract provider ID from profile
    */
   getProviderId(profile) {
-    return profile.sub || profile.id
-  }
-
-  /**
-   * Fetch user profile from Google's OpenID Connect endpoint
-   */
-  async getProfile(data, params) {
-    const response = await fetch('https://openidconnect.googleapis.com/v1/userinfo', {
-      headers: {
-        Authorization: `Bearer ${data.access_token}`
-      }
-    })
-
-    if (!response.ok) {
-      throw new Error('Failed to fetch user profile from Google')
-    }
-
-    const profile = await response.json()
-
-    if (!profile.email) {
-      throw new Error('Email is required but not provided by Google OAuth')
-    }
-
-    return profile
+    return String(profile.id)
   }
 
   /**
@@ -143,7 +120,7 @@ export class GoogleStrategy extends OAuthStrategy {
         email: oauthProfile.email,
         name: oauthProfile.name || oauthProfile.email.split('@')[0],
         providerId: providerId,
-        suggestedUsername: this.generateUsernameFromEmail(oauthProfile.email)
+        suggestedUsername: oauthProfile.suggestedUsername
       }
 
       const OAUTH_COMPLETION_EXPIRY_SECONDS = 15 * 60 // 15 minutes
@@ -176,8 +153,8 @@ export class GoogleStrategy extends OAuthStrategy {
     const accessToken = await this.authentication.createAccessToken(payload)
 
     return {
-      user: user,
-      accessToken: accessToken
+      user,
+      accessToken
     }
   }
 
@@ -213,11 +190,9 @@ export class GoogleStrategy extends OAuthStrategy {
         id: providerId
       }
 
-      await userService.patch(userId, {
+      const updatedUser = await userService.patch(userId, {
         oauthProviders: existingUserByEmail.oauthProviders
       })
-
-      const updatedUser = await userService.get(userId)
 
       return await this.createLoginToken(updatedUser)
     }
@@ -226,6 +201,96 @@ export class GoogleStrategy extends OAuthStrategy {
     return {
       oauthProfile: profile,
       providerId: providerId
+    }
+  }
+}
+
+/**
+ * Google OAuth Strategy
+ */
+export class GoogleStrategy extends BaseOAuthStrategy {
+  /**
+   * Fetch user profile from Google's OpenID Connect endpoint
+   */
+  async getProfile(data, params) {
+    const response = await fetch('https://openidconnect.googleapis.com/v1/userinfo', {
+      headers: {
+        Authorization: `Bearer ${data.access_token}`
+      }
+    })
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch user profile from Google')
+    }
+
+    const profile = await response.json()
+
+    if (!profile.email) {
+      throw new Error('Email is required but not provided by Google OAuth')
+    }
+
+    return {
+      id: profile.sub || profile.id,
+      email: profile.email,
+      name: profile.name,
+      suggestedUsername: this.generateUsernameFromEmail(profile.email)
+    }
+  }
+}
+
+/**
+ * GitHub OAuth Strategy
+ */
+export class GitHubStrategy extends BaseOAuthStrategy {
+  /**
+   * Fetch user profile from GitHub API
+   * GitHub requires separate API calls for profile and emails
+   */
+  async getProfile(data, params) {
+    const accessToken = data.access_token
+
+    const profileResponse = await fetch('https://api.github.com/user', {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        Accept: 'application/vnd.github.v3+json'
+      }
+    })
+
+    if (!profileResponse.ok) {
+      throw new Error('Failed to fetch user profile from GitHub')
+    }
+
+    const profile = await profileResponse.json()
+
+    const emailsResponse = await fetch('https://api.github.com/user/emails', {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        Accept: 'application/vnd.github.v3+json'
+      }
+    })
+
+    if (!emailsResponse.ok) {
+      throw new Error('Failed to fetch user emails from GitHub')
+    }
+
+    const emails = await emailsResponse.json()
+
+    const primaryEmail = emails.find(email => email.primary && email.verified) ||
+                        emails.find(email => email.verified) ||
+                        emails.find(email => email.primary) ||
+                        emails[0]
+
+    if (!primaryEmail || !primaryEmail.email) {
+      throw new Error('Email is required but not provided by GitHub OAuth')
+    }
+
+    return {
+      id: profile.id,
+      email: primaryEmail.email,
+      name: profile.name,
+      suggestedUsername: profile.login
+        ? profile.login.toLowerCase().replace(/[^a-z0-9_]/g, '')
+        : this.generateUsernameFromEmail(primaryEmail.email)
     }
   }
 }

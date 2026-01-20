@@ -7,7 +7,8 @@ SPDX-License-Identifier: AGPL-3.0-or-later
 <template>
   <v-container fluid>
     <signup-progress-bar step="0" msg="start with the form"></signup-progress-bar>
-    <v-card :title="`Sign Up to ${siteConfig?.siteTitle}`" class="mx-auto mt-8" width="22em" flat>
+    <v-card class="mx-auto mt-8" width="28em" flat>
+      <v-card-title class="text-center pb-4">{{ `Sign Up to ${siteConfig?.siteTitle}` }}</v-card-title>
       <template v-slot:loader="{  }">
         <v-progress-linear
           :active="isCreatePending"
@@ -15,6 +16,69 @@ SPDX-License-Identifier: AGPL-3.0-or-later
           indeterminate
         ></v-progress-linear>
       </template>
+      <v-card-text v-if="isGoogleOAuthEnabled || isGitHubOAuthEnabled" class="pb-4">
+        <div v-if="isOAuthRedirecting && (isGoogleOAuthEnabled || isGitHubOAuthEnabled)" class="d-flex flex-column align-center justify-center" style="min-height: 40px;">
+          <v-progress-circular
+            indeterminate
+            color="primary"
+            size="40"
+            width="4"
+          ></v-progress-circular>
+          <span class="mt-2 text-caption text-grey">Redirecting to {{ oAuthRedirectingProvider === 'google' ? 'Google' : 'GitHub' }}...</span>
+        </div>
+        <v-row v-else-if="isGoogleOAuthEnabled || isGitHubOAuthEnabled" no-gutters>
+          <v-col v-if="isGoogleOAuthEnabled" :cols="isGitHubOAuthEnabled ? 6 : 12" class="text-center" :class="isGitHubOAuthEnabled ? 'pr-1' : ''" style="position: relative;">
+            <img 
+              src="/img/google-signin-button.svg" 
+              alt="Sign in with Google"
+              @click="!isCreatePending && loginWithOAuth('google')"
+              :style="{ 
+                height: '40px', 
+                width: 'auto', 
+                cursor: isCreatePending ? 'not-allowed' : 'pointer',
+                opacity: isCreatePending ? 0.6 : 1,
+                display: 'block',
+                margin: '0 auto'
+              }"
+              class="google-signin-button"
+            />
+          </v-col>
+          <v-col v-if="isGitHubOAuthEnabled" :cols="isGoogleOAuthEnabled ? 6 : 12" class="text-center" :class="isGoogleOAuthEnabled ? 'pl-1' : ''" style="position: relative;">
+            <v-btn
+              variant="outlined"
+              size="large"
+              :disabled="isCreatePending"
+              @click="!isCreatePending && loginWithOAuth('github')"
+              :style="{ 
+                height: '40px',
+                width: 'auto',
+                cursor: isCreatePending ? 'not-allowed' : 'pointer',
+                opacity: isCreatePending ? 0.6 : 1,
+                display: 'inline-flex',
+                backgroundColor: '#FFFFFF',
+                borderColor: '#747775',
+                borderWidth: '1px',
+                borderStyle: 'solid',
+                color: '#3c4043 !important',
+                textTransform: 'none',
+                fontSize: '14px',
+                fontWeight: '500',
+                letterSpacing: '0.25px',
+                padding: '0 16px'
+              }"
+              class="github-signin-button"
+            >
+              <v-icon start size="18" style="margin-right: 10px; color: #24292f;">mdi-github</v-icon>
+              <span style="color: #3c4043;">Sign in with GitHub</span>
+            </v-btn>
+          </v-col>
+        </v-row>
+        <div v-if="isGoogleOAuthEnabled || isGitHubOAuthEnabled" class="d-flex align-center my-3">
+          <v-divider></v-divider>
+          <span class="mx-4 text-grey">OR</span>
+          <v-divider></v-divider>
+        </div>
+      </v-card-text>
       <v-form v-model="isValid" ref="form" @submit.prevent="signUp">
         <v-text-field
           v-model="user.email"
@@ -217,12 +281,20 @@ export default {
       extraHintContent: '',
       lastBadUsername: '',
       lastBadEmail: '',
+      isOAuthRedirecting: false,
+      oAuthRedirectingProvider: null,
     }
   },
   computed: {
     User: () => models.api.User,
     ...mapGetters('app', ['siteConfig']),
     ...mapState('users', ['isCreatePending']),
+    isGoogleOAuthEnabled() {
+      return this.siteConfig?.oauth?.providers?.google?.enabled === true;
+    },
+    isGitHubOAuthEnabled() {
+      return this.siteConfig?.oauth?.providers?.github?.enabled === true;
+    },
     usageTypes() {
       return [
         { value: 'work', title: `I want to use ${this.siteConfig?.siteTitle} for work` },
@@ -285,6 +357,18 @@ export default {
         return "requires at least 4 characters in derived username";
       }
       return true;
+    },
+    loginWithOAuth(provider) {
+      if (this.isOAuthRedirecting || this.isCreatePending) {
+        return;
+      }
+
+      this.isOAuthRedirecting = true;
+      this.oAuthRedirectingProvider = provider;
+      // Small delay to show loading state before redirect
+      setTimeout(() => {
+        window.location.href = `${import.meta.env.VITE_APP_API_URL}oauth/${provider}`;
+      }, 100);
     },
     extraHintCheck(newRawString) {
       if (this.extraHintContent === '') {

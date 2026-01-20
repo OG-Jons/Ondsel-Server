@@ -8,7 +8,7 @@ import { AuthenticationService, JWTStrategy } from '@feathersjs/authentication'
 import { LocalStrategy } from '@feathersjs/authentication-local'
 import { oauth } from '@feathersjs/authentication-oauth'
 import { NotFound } from '@feathersjs/errors'
-import { GoogleStrategy } from './authentication/oauth-helper.js'
+import { GitHubStrategy, GoogleStrategy } from './authentication/oauth-helper.js'
 import { createRequire } from 'module'
 
 const require = createRequire(import.meta.url)
@@ -103,12 +103,16 @@ async function configureOAuth(app, authentication) {
   const providerConfigs = app.get('oauthProviderConfigs') || {}
 
   // Build OAuth config for Grant
-  const oauthConfig = providerConfigs.google ? { google: { ...providerConfigs.google } } : {}
+  const oauthConfig = {
+    ...(providerConfigs.google ? { google: { ...providerConfigs.google } } : {}),
+    ...(providerConfigs.github ? { github: { ...providerConfigs.github } } : {})
+  }
 
   const currentAuthConfig = app.get('authentication') || {}
   app.set('authentication', { ...currentAuthConfig, oauth: oauthConfig })
 
   authentication.register('google', new GoogleStrategy())
+  authentication.register('github', new GitHubStrategy())
   app.configure(oauth())
 
   // Patch OAuthService handler to support dynamic config updates
@@ -159,6 +163,19 @@ function updateOAuthProviderConfigs(app, siteConfig) {
       transport: 'state',
       response: ['tokens', 'raw', 'profile'],
       redirect_uri: googleConfig.redirectUri
+    }
+  }
+
+  const githubConfig = siteConfig?.oauth?.providers?.github
+  if (githubConfig?.enabled && githubConfig.clientId && githubConfig.clientSecret) {
+    providerConfigs.github = {
+      ...grantOAuthDefaults.github,
+      key: githubConfig.clientId,
+      secret: githubConfig.clientSecret,
+      scope: 'user:email',
+      transport: 'state',
+      response: ['tokens', 'raw', 'profile'],
+      redirect_uri: githubConfig.redirectUri
     }
   }
 

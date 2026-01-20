@@ -20,7 +20,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
               <v-card-title>Google OAuth</v-card-title>
               <v-card-text>
                 <p class="text-caption text-grey-darken-1 mb-4">
-                  See the <a href="https://github.com/FreeCAD/Ondsel-Server/blob/main/docs/admin-panel.md#oauth-configuration" target="_blank" rel="noopener noreferrer">OAuth Configuration documentation</a> for setup instructions. Use the Redirect URI shown below when configuring your OAuth app.
+                  See the <a href="https://github.com/FreeCAD/Ondsel-Server/blob/main/docs/admin-panel.md#google-oauth" target="_blank" rel="noopener noreferrer">Google OAuth setup instructions</a> in the OAuth Configuration documentation. Use the Redirect URI shown below when configuring your Google OAuth app.
                 </p>
 
                 <v-switch
@@ -77,6 +77,68 @@ SPDX-License-Identifier: AGPL-3.0-or-later
               </v-card-text>
             </v-card>
           </v-col>
+          <v-col cols="12">
+            <v-card class="ma-2" elevation="1">
+              <v-card-title>GitHub OAuth</v-card-title>
+              <v-card-text>
+                <p class="text-caption text-grey-darken-1 mb-4">
+                  See the <a href="https://github.com/FreeCAD/Ondsel-Server/blob/main/docs/admin-panel.md#github-oauth" target="_blank" rel="noopener noreferrer">GitHub OAuth setup instructions</a> in the OAuth Configuration documentation. Use the Redirect URI shown below when configuring your GitHub OAuth app.
+                </p>
+
+                <v-switch
+                  v-model="githubConfig.enabled"
+                  label="Enable GitHub OAuth"
+                  color="primary"
+                ></v-switch>
+
+                <template v-if="!githubConfig.enabled">
+                  <p class="text-caption text-grey-darken-1 mb-4">
+                    Enable GitHub OAuth above to configure Client ID and Client Secret.
+                  </p>
+                </template>
+
+                <v-text-field
+                  v-model="githubConfig.clientId"
+                  label="Client ID"
+                  :rules="githubRules.clientId"
+                  :disabled="isSaving || !githubConfig.enabled"
+                  type="text"
+                  hint="GitHub OAuth App Client ID"
+                  persistent-hint
+                  class="mb-2"
+                ></v-text-field>
+
+                <v-text-field
+                  v-model="githubConfig.clientSecret"
+                  label="Client Secret"
+                  :rules="githubRules.clientSecret"
+                  :disabled="isSaving || !githubConfig.enabled"
+                  type="password"
+                  hint="GitHub OAuth App Client Secret (masked for security)"
+                  persistent-hint
+                  class="mb-2"
+                ></v-text-field>
+
+                <v-text-field
+                  :model-value="githubRedirectUri"
+                  label="Redirect URI"
+                  readonly
+                  hint="Use this redirect URI when configuring your GitHub OAuth app"
+                  persistent-hint
+                  class="mb-2"
+                >
+                  <template v-slot:append>
+                    <v-btn
+                      icon="mdi-content-copy"
+                      variant="text"
+                      size="small"
+                      @click="copyToClipboard(githubRedirectUri)"
+                    ></v-btn>
+                  </template>
+                </v-text-field>
+              </v-card-text>
+            </v-card>
+          </v-col>
         </v-row>
       </v-form>
     </v-card-text>
@@ -116,6 +178,11 @@ export default {
         clientId: '',
         clientSecret: '',
       },
+      githubConfig: {
+        enabled: false,
+        clientId: '',
+        clientSecret: '',
+      },
       showSnackbar: false,
       snackbarMessage: '',
       snackbarColor: 'success',
@@ -130,6 +197,20 @@ export default {
           v => {
             if (!this.googleConfig.enabled) return true;
             return !!v || 'Client Secret is required when Google OAuth is enabled';
+          }
+        ],
+      },
+      githubRules: {
+        clientId: [
+          v => {
+            if (!this.githubConfig.enabled) return true;
+            return !!v || 'Client ID is required when GitHub OAuth is enabled';
+          }
+        ],
+        clientSecret: [
+          v => {
+            if (!this.githubConfig.enabled) return true;
+            return !!v || 'Client Secret is required when GitHub OAuth is enabled';
           }
         ],
       },
@@ -150,16 +231,27 @@ export default {
       const baseUrl = import.meta.env.VITE_APP_API_URL?.replace(/\/$/, '') || window.location.origin;
       return `${baseUrl}/oauth/google/callback`;
     },
+    githubRedirectUri() {
+      const baseUrl = import.meta.env.VITE_APP_API_URL?.replace(/\/$/, '') || window.location.origin;
+      return `${baseUrl}/oauth/github/callback`;
+    },
   },
   watch: {
     'siteConfig': {
       handler(newVal) {
-        if (newVal && newVal.oauth?.providers?.google) {
-          if (!this.googleConfig.clientId) {
+        if (newVal && newVal.oauth?.providers) {
+          if (newVal.oauth.providers.google && !this.googleConfig.clientId) {
             this.googleConfig = {
               enabled: newVal.oauth.providers.google.enabled || false,
               clientId: newVal.oauth.providers.google.clientId || '',
               clientSecret: newVal.oauth.providers.google.clientSecret || '',
+            };
+          }
+          if (newVal.oauth.providers.github && !this.githubConfig.clientId) {
+            this.githubConfig = {
+              enabled: newVal.oauth.providers.github.enabled || false,
+              clientId: newVal.oauth.providers.github.clientId || '',
+              clientSecret: newVal.oauth.providers.github.clientSecret || '',
             };
           }
         }
@@ -167,6 +259,14 @@ export default {
       immediate: true
     },
     'googleConfig.enabled'() {
+      // Trigger validation when enabled state changes
+      this.$nextTick(() => {
+        if (this.$refs.form) {
+          this.$refs.form.validate();
+        }
+      });
+    },
+    'githubConfig.enabled'() {
       // Trigger validation when enabled state changes
       this.$nextTick(() => {
         if (this.$refs.form) {
@@ -191,6 +291,12 @@ export default {
               clientId: this.googleConfig.clientId.trim(),
               clientSecret: this.googleConfig.clientSecret.trim(),
               redirectUri: this.googleRedirectUri,
+            },
+            github: {
+              enabled: this.githubConfig.enabled,
+              clientId: this.githubConfig.clientId.trim(),
+              clientSecret: this.githubConfig.clientSecret.trim(),
+              redirectUri: this.githubRedirectUri,
             },
           }
         };
