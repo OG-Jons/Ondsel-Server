@@ -170,14 +170,27 @@ The FC-Worker is a submodule and has its own [repository](https://github.com/Fre
 ```bash
 $ cd FC-Worker
 $ docker-compose build
-$ docker-compose up -d`
+$ docker-compose up -d
 ```
 
 Check if it works:
 
 ```bash
-curl -v http://127.0.0.1:9000/2015-03-31/functions/function/invocations -X POST -H "Content-Type: application/json" -d '{"command":"<your-health-check-string>"}'
+curl -v http://127.0.0.1:9000/2015-03-31/functions/function/invocations -X POST -H "Content-Type: application/json" -d '{"command":"health_check"}'
 ```
+
+## Documentation
+
+Additional documentation is available in the [`docs/`](docs/) directory:
+
+- **[Admin Panel Guide](docs/admin-panel.md)** - Configure branding, OAuth, software releases, and user management
+- **[TrueNAS Installation](docs/lens-truenas-app.md)** - Install Lens on TrueNAS SCALE
+- **[Migration Guide](docs/migration.md)** - Upgrade existing deployments to latest version
+- **[Workflows](docs/workflows.md)** - Platform workflows including signup, organizations, workspaces, file uploads, and model sharing
+- **[Services](docs/services.md)** - Backend services documentation
+- **[Technical Details](docs/technical.md)** - Technical implementation details
+- **[FC-Worker Upgrade](docs/upgrade.md)** - Upgrade FreeCAD version in FC-Worker
+- **[Troubleshooting Guide](docs/troubleshooting.md)** - Common issues and solutions
 
 <!-- ## Important Links -->
 
