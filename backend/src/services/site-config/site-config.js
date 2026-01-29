@@ -1,4 +1,5 @@
 // SPDX-FileCopyrightText: 2024 Ondsel <development@ondsel.com>
+// SPDX-FileCopyrightText: 2026 Amritpal Singh <amrit3701@gmail.com>
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
@@ -14,6 +15,7 @@ import {
   siteConfigResolver,
   siteConfigExternalResolver
 } from './site-config.schema.js'
+import { filterSiteConfigForPublic } from './helpers.js'
 import { SiteConfigService, getOptions } from './site-config.class.js'
 import { siteConfigPath, siteConfigMethods } from './site-config.shared.js'
 import { siteConfigId } from './site-config.schema.js'
@@ -100,9 +102,10 @@ export const siteConfig = (app) => {
   // Add publish configuration for real-time updates
   app.service(siteConfigPath).publish('patched', (data, context) => {
     // Broadcast site config updates to all users (public and authenticated)
+    const filteredData = filterSiteConfigForPublic(data)
     return [
-      app.channel('anonymous'),
-      app.channel('authenticated')
+      app.channel('anonymous').send(filteredData),
+      app.channel('authenticated').send(filteredData)
     ];
   });
 
@@ -110,6 +113,19 @@ export const siteConfig = (app) => {
   app.service(siteConfigPath).hooks({
     around: {
       all: [
+        // Authenticate before external resolver needs user
+        async (context, next) => {
+          if (context.method === 'get') {
+            // For non-default configs, require authentication
+            if (context.id !== siteConfigId) {
+              await authenticate('jwt')(context)
+            } else if (context.params.authentication) {
+              // For default config, authenticate if token provided (for admin access)
+              await authenticate('jwt')(context)
+            }
+          }
+          return next()
+        },
         schemaHooks.resolveExternal(siteConfigExternalResolver),
         schemaHooks.resolveResult(siteConfigResolver)
       ]
@@ -120,15 +136,8 @@ export const siteConfig = (app) => {
         schemaHooks.resolveQuery(siteConfigQueryResolver)
       ],
       get: [
-        // Allow public access to default site config
-        async (context) => {
-          if (context.id === siteConfigId) {
-            return context; // Skip authentication
-          }
-          // Require authentication for other configs
-          return authenticate('jwt')(context);
-        },
-        // Only verify admin power for non-default configs
+        // Verify admin power for non-default configs
+        // (Authentication already handled in around.all hook)
         async (context) => {
           if (context.id !== siteConfigId) {
             return verifySiteAdministrativePower(context);

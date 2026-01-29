@@ -7,7 +7,9 @@ import { resolve, virtual } from '@feathersjs/schema'
 import { Type, getValidator, querySyntax } from '@feathersjs/typebox'
 import { ObjectIdSchema } from '@feathersjs/typebox'
 import { dataValidator, queryValidator } from '../../validators.js'
-import { userSummarySchema } from '../users/users.subdocs.schema.js';
+import { userSummarySchema } from '../users/users.subdocs.schema.js'
+import { isSiteAdministrator, adminOnlyField } from '../hooks/administration.js'
+import { filterOAuthDataForPublic, filterOAuthDataForAdmin, filterMaskedOAuthSecretsFromPatch } from './helpers.js'
 
 // Fixed ID for the single site config document
 export const siteConfigId = '000000000000000000000000';
@@ -113,7 +115,18 @@ export const siteConfigResolver = resolve({
   }),
 })
 
-export const siteConfigExternalResolver = resolve({})
+export const siteConfigExternalResolver = resolve({
+  oauth: async (value, data, context) => {
+    if (!context.params.user) return filterOAuthDataForPublic(value)
+    const [isAdmin] = await isSiteAdministrator(context.params, context.app)
+    return isAdmin ? filterOAuthDataForAdmin(value) : filterOAuthDataForPublic(value)
+  },
+  defaultModel: adminOnlyField,
+  defaultModelObjUrl: adminOnlyField,
+  customized: adminOnlyField,
+  updatedAt: adminOnlyField,
+  updatedBy: adminOnlyField
+})
 
 // Schema for updating existing entries
 export const siteConfigPatchSchema = Type.Partial(siteConfigSchema, {
@@ -131,6 +144,17 @@ export const siteConfigPatchResolver = resolve({
       }
     }
     return _value
+  },
+  oauth: async (value, _message, context) => {
+    if (value) {
+      try {
+        const existingConfig = await context.app.service('site-config').get(context.id)
+        return filterMaskedOAuthSecretsFromPatch(value, existingConfig?.oauth)
+      } catch (error) {
+        return filterMaskedOAuthSecretsFromPatch(value, null)
+      }
+    }
+    return value
   }
 })
 

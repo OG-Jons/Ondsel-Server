@@ -1,5 +1,6 @@
 <!--
 SPDX-FileCopyrightText: 2024 Ondsel <development@ondsel.com>
+SPDX-FileCopyrightText: 2026 Amritpal Singh <amrit3701@gmail.com>
 
 SPDX-License-Identifier: AGPL-3.0-or-later
 -->
@@ -17,13 +18,14 @@ SPDX-License-Identifier: AGPL-3.0-or-later
 
 <script>
 import MainNavigationBar from '@/layouts/default/MainNavigationBar.vue';
-import { mapActions, mapGetters } from 'vuex';
+import { mapActions, mapGetters, mapState } from 'vuex';
 
 export default {
   name: 'App',
   components: { MainNavigationBar },
   computed: {
     ...mapGetters('app', ['siteConfig']),
+    ...mapState('auth', ['user']),
   },
   data: () => ({
   }),
@@ -41,6 +43,13 @@ export default {
         }
       },
       immediate: true
+    },
+    'user': {
+      handler(newUser) {
+        if (newUser) {
+          this.loadSiteConfig();
+        }
+      }
     }
   },
   methods: {

@@ -256,7 +256,8 @@ export default {
           }
         }
       },
-      immediate: true
+      immediate: true,
+      deep: true
     },
     'googleConfig.enabled'() {
       // Trigger validation when enabled state changes
