@@ -34,6 +34,12 @@ export async function addOauthToSiteConfigCommand(app) {
         clientSecret: '',
         redirectUri: '',
       },
+      github: {
+        enabled: false,
+        clientId: '',
+        clientSecret: '',
+        redirectUri: '',
+      },
     }
   };
 

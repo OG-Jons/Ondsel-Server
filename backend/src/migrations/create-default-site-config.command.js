@@ -95,6 +95,12 @@ export async function createDefaultSiteConfigCommand(app) {
           clientSecret: '',
           redirectUri: '',
         },
+        github: {
+          enabled: false,
+          clientId: '',
+          clientSecret: '',
+          redirectUri: '',
+        },
       }
     },
     customized: {
