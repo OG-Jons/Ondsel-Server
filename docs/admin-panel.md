@@ -29,7 +29,7 @@ The Xavier admin panel is a hidden administrative interface for site administrat
 | [Brand Identity](#brand-identity) | `/xavier-branding-logo-87654321` | Logo, favicon, title & social links |
 | [Homepage Content](#homepage-content) | `/xavier-branding-homepage-11223344` | Homepage customization |
 | [Default Model](#default-model) | `/xavier-branding-default-model-55667788` | Default 3D model for new users |
-| [OAuth Configuration](#oauth-configuration) | `/xavier-oauth-12345678` | OAuth provider configuration (Google, GitHub) |
+| [OAuth Configuration](#oauth-configuration) | `/xavier-oauth-12345678` | OAuth provider configuration (Google, GitHub, OIDC) |
 | [Software Releases](#software-releases) | `/xavier-9384242` | Manage download links |
 | [Key Documents](#key-documents) | `/xavier-7492783/:name` | Legal document management |
 | [Remove User](#remove-user) | `/xavier-55554337898` | User account deletion |
@@ -146,7 +146,7 @@ Upload and configure the default 3D model that appears for new user registration
 
 **Route:** `/xavier-oauth-12345678`
 
-Configure OAuth 2.0 authentication providers to enable social login for users. Currently supports Google and GitHub OAuth.
+Configure OAuth 2.0 / OpenID Connect authentication providers to enable social login for users. Supports Google, GitHub, and generic OIDC (for example Keycloak).
 
 ### Configurable Options
 
@@ -166,6 +166,21 @@ Configure OAuth 2.0 authentication providers to enable social login for users. C
 | Client Secret | GitHub OAuth App Client Secret (masked input) |
 | Redirect URI | Auto-generated redirect URI (read-only, copy to GitHub OAuth App settings) |
 
+#### OpenID Connect (OIDC)
+
+| Setting | Description |
+|---------|-------------|
+| Enable OIDC sign-in | Toggle to enable/disable SSO login via your OIDC IdP |
+| Issuer URL | OIDC issuer identifier (must match your IdP). Example: `https://auth.example.com/realms/myrealm`. Required for **Fetch endpoints from issuer**; the server must be able to reach this URL when you click that button |
+| Client ID | OIDC client ID from your identity provider |
+| Client Secret | OIDC client secret (masked input) |
+| Sign-in button suffix | Text shown after **Sign in with** on login and sign-up (for example `Keycloak` → **Sign in with Keycloak**). Leave empty to use **SSO** |
+| Fetch endpoints from issuer | Looks up your IdP’s discovery document from the **Issuer URL** and fills in the three endpoint fields below |
+| Authorization endpoint URL | Paste from your IdP or use **Fetch endpoints from issuer** |
+| Token endpoint URL | Paste the token endpoint from your IdP or use **Fetch endpoints from issuer** |
+| Userinfo endpoint URL | Paste the userinfo endpoint from your IdP or use **Fetch endpoints from issuer** |
+| Redirect URI | Auto-generated redirect URI (read-only, register this exact URL as an allowed redirect in your IdP client) |
+
 ### Usage
 
 1. **For Google OAuth:**
@@ -183,12 +198,25 @@ Configure OAuth 2.0 authentication providers to enable social login for users. C
    - Enter Client ID and Client Secret
    - Click **Save** to apply changes
 
+3. **For OpenID Connect (OIDC):**
+   - In your IdP, create an OIDC client following your identity provider’s documentation
+   - Set the client redirect URI to match the displayed Redirect URI
+   - In the IdP, allow the scopes Lens uses at login: **`openid`**, **`email`**, and **`profile`**
+   - If the Lens **server** cannot reach your issuer hostname from its network (for example in Docker), use an **Issuer URL** the server can resolve and reach (not only a URL that works in the browser)
+   - Enable **OIDC sign-in** toggle
+   - Enter **Issuer URL**, **Client ID**, and **Client Secret**
+   - Optionally set **Sign-in button suffix** so the OIDC button matches your IdP name (or leave empty for **Sign in with SSO**)
+   - Enter **Authorization**, **Token**, and **Userinfo** endpoint URLs (paste from your IdP, or click **Fetch endpoints from issuer** after filling the issuer)
+   - Click **Save** to apply changes
+
 ### Features
-- Enable/disable toggles for each OAuth provider (Google, GitHub)
+- Enable/disable toggles for each OAuth provider (Google, GitHub, OIDC)
 - Secure credential storage (secrets are masked)
 - Auto-generated redirect URIs for each provider
+- OIDC: **Fetch endpoints from issuer** calls discovery and fills authorization, token, and userinfo URL fields (or paste those URLs manually)
 - "Sign in with Google" button appears on login page when Google OAuth enabled
 - "Sign in with GitHub" button appears on login page when GitHub OAuth enabled
+- **Sign in with …** OIDC button appears on login and sign-up when OIDC is enabled; the suffix is configurable (default **SSO**)
 
 ### Security Notes
 - OAuth credentials are stored securely in the site-config service

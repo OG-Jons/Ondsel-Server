@@ -5,6 +5,7 @@
 
 // For more information about this file see https://dove.feathersjs.com/guides/cli/service.html
 import { authenticate } from '@feathersjs/authentication'
+import { authenticate as expressAuthenticate } from '@feathersjs/express'
 import { hooks as schemaHooks } from '@feathersjs/schema'
 import { disallow } from 'feathers-hooks-common'
 import swagger from 'feathers-swagger'
@@ -23,12 +24,13 @@ import { filterSiteConfigForPublic } from './helpers.js'
 import { SiteConfigService, getOptions } from './site-config.class.js'
 import { siteConfigPath, siteConfigMethods } from './site-config.shared.js'
 import { siteConfigId } from './site-config.schema.js'
-import { verifySiteAdministrativePower } from '../hooks/administration.js'
+import { verifySiteAdministrativePower, isSiteAdministrator } from '../hooks/administration.js'
 import { setCustomizedFlags } from './set-customized-flags.hook.js'
 import { uploadBrandingLogo } from './upload-branding.hook.js'
 import { uploadDefaultModel, uploadDefaultModelThumbnail } from './upload-default-model.hook.js'
 import { parseSocialLinks } from './parse-social-links.hook.js'
 import multer from 'multer'
+import { fetchOpenIdConfiguration } from '../../authentication/oidc-discovery.js'
 
 export * from './site-config.class.js'
 export * from './site-config.schema.js'
@@ -291,4 +293,44 @@ export const siteConfig = (app) => {
       return res.status(500).json({ error: 'Failed to fetch FreeCAD feed', details: error.message });
     }
   });
+
+  // Resolve OIDC endpoint URLs from an issuer (OAuth settings screen)
+  app.post(
+    '/oidc-discovery',
+    (req, res, next) => {
+      expressAuthenticate('jwt')(req, res, (err) => {
+        if (err) {
+          return res.status(401).json({ error: 'Not authenticated' })
+        }
+        next()
+      })
+    },
+    async (req, res) => {
+      try {
+        const user = req.feathers?.user
+        if (!user) {
+          return res.status(401).json({ error: 'Not authenticated' })
+        }
+        const [isAdmin, reason] = await isSiteAdministrator(
+          { user, provider: 'rest' },
+          app
+        )
+        if (!isAdmin) {
+          return res.status(403).json({ error: reason || 'Forbidden' })
+        }
+        const issuer = typeof req.body?.issuer === 'string' ? req.body.issuer.trim() : ''
+        if (!issuer) {
+          return res.status(400).json({ error: 'issuer is required' })
+        }
+        const doc = await fetchOpenIdConfiguration(issuer)
+        return res.json({
+          authorizeUrl: doc.authorization_endpoint,
+          tokenUrl: doc.token_endpoint,
+          userinfoUrl: doc.userinfo_endpoint
+        })
+      } catch (e) {
+        return res.status(400).json({ error: e.message || 'OIDC discovery failed' })
+      }
+    }
+  );
 }

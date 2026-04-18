@@ -92,6 +92,23 @@ class SiteConfig extends BaseModel {
             clientSecret: '',
             redirectUri: '',
           },
+          github: {
+            enabled: false,
+            clientId: '',
+            clientSecret: '',
+            redirectUri: '',
+          },
+          oidc: {
+            enabled: false,
+            clientId: '',
+            clientSecret: '',
+            redirectUri: '',
+            issuer: '',
+            authorizeUrl: '',
+            tokenUrl: '',
+            userinfoUrl: '',
+            signInWithName: '',
+          },
         }
       },
       customized: {

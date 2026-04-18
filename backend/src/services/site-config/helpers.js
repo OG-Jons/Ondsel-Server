@@ -29,7 +29,8 @@ export const filterOAuthDataForPublic = (oauthData) => {
   return {
     providers: {
       google: oauthData.providers.google ? { enabled: oauthData.providers.google.enabled } : undefined,
-      github: oauthData.providers.github ? { enabled: oauthData.providers.github.enabled } : undefined
+      github: oauthData.providers.github ? { enabled: oauthData.providers.github.enabled } : undefined,
+      oidc: oauthData.providers.oidc ? { enabled: oauthData.providers.oidc.enabled, signInWithName: oauthData.providers.oidc.signInWithName } : undefined
     }
   }
 }

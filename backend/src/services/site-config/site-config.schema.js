@@ -64,11 +64,25 @@ const oauthProviderConfigSchema = Type.Object({
   redirectUri: Type.String(),
 })
 
+// OIDC provider config sub-schema
+const oauthOidcProviderConfigSchema = Type.Object({
+  enabled: Type.Boolean(),
+  clientId: Type.String(),
+  clientSecret: Type.String(),
+  redirectUri: Type.String(),
+  issuer: Type.String(),
+  authorizeUrl: Type.String(),
+  tokenUrl: Type.String(),
+  userinfoUrl: Type.String(),
+  signInWithName: Type.String({ maxLength: 20 }),
+})
+
 // OAuth config sub-schema
 const oauthConfigSchema = Type.Object({
   providers: Type.Object({
     google: oauthProviderConfigSchema,
     github: oauthProviderConfigSchema,
+    oidc: oauthOidcProviderConfigSchema,
   })
 })
 
