@@ -8,7 +8,7 @@ import { AuthenticationService, JWTStrategy } from '@feathersjs/authentication'
 import { LocalStrategy } from '@feathersjs/authentication-local'
 import { oauth } from '@feathersjs/authentication-oauth'
 import { NotFound } from '@feathersjs/errors'
-import { GitHubStrategy, GoogleStrategy } from './authentication/oauth-helper.js'
+import { GitHubStrategy, GoogleStrategy, OidcStrategy } from './authentication/oauth-helper.js'
 import { createRequire } from 'module'
 
 const require = createRequire(import.meta.url)
@@ -91,7 +91,7 @@ async function configureOAuth(app, authentication) {
   // Load OAuth config from site-config
   try {
     const siteConfig = await app.service('site-config').get(siteConfigId)
-    updateOAuthProviderConfigs(app, siteConfig)
+    await updateOAuthProviderConfigs(app, siteConfig)
   } catch (error) {
     if (error.code === 404 || error.className === 'not-found') {
       console.log('Site-config not found - OAuth will be available after migrations run')
@@ -105,7 +105,8 @@ async function configureOAuth(app, authentication) {
   // Build OAuth config for Grant
   const oauthConfig = {
     ...(providerConfigs.google ? { google: { ...providerConfigs.google } } : {}),
-    ...(providerConfigs.github ? { github: { ...providerConfigs.github } } : {})
+    ...(providerConfigs.github ? { github: { ...providerConfigs.github } } : {}),
+    ...(providerConfigs.oidc ? { oidc: { ...providerConfigs.oidc } } : {})
   }
 
   const currentAuthConfig = app.get('authentication') || {}
@@ -113,6 +114,7 @@ async function configureOAuth(app, authentication) {
 
   authentication.register('google', new GoogleStrategy())
   authentication.register('github', new GitHubStrategy())
+  authentication.register('oidc', new OidcStrategy())
   app.configure(oauth())
 
   // Patch OAuthService handler to support dynamic config updates
@@ -141,15 +143,15 @@ async function configureOAuth(app, authentication) {
   }
 
   // Store update function for site-config service hook
-  app.set('updateOAuthConfig', (siteConfig) => {
-    updateOAuthProviderConfigs(app, siteConfig)
+  app.set('updateOAuthConfig', async (siteConfig) => {
+    await updateOAuthProviderConfigs(app, siteConfig)
   })
 }
 
 /**
  * Update OAuth provider configs from site-config
  */
-function updateOAuthProviderConfigs(app, siteConfig) {
+async function updateOAuthProviderConfigs(app, siteConfig) {
   const providerConfigs = {}
 
   const googleConfig = siteConfig?.oauth?.providers?.google
@@ -176,6 +178,32 @@ function updateOAuthProviderConfigs(app, siteConfig) {
       transport: 'state',
       response: ['tokens', 'raw', 'profile'],
       redirect_uri: githubConfig.redirectUri
+    }
+  }
+
+  const oidcConfig = siteConfig?.oauth?.providers?.oidc
+  if (
+    oidcConfig?.enabled &&
+    oidcConfig.clientId &&
+    oidcConfig.clientSecret &&
+    oidcConfig.redirectUri &&
+    oidcConfig.authorizeUrl &&
+    oidcConfig.tokenUrl &&
+    oidcConfig.userinfoUrl
+  ) {
+    providerConfigs.oidc = {
+      authorize_url: oidcConfig.authorizeUrl,
+      access_url: oidcConfig.tokenUrl,
+      profile_url: oidcConfig.userinfoUrl,
+      oauth: 2,
+      key: oidcConfig.clientId,
+      secret: oidcConfig.clientSecret,
+      scope: 'openid email profile',
+      nonce: true,
+      transport: 'state',
+      response: ['tokens', 'raw', 'profile'],
+      redirect_uri: oidcConfig.redirectUri,
+      scope_delimiter: ' '
     }
   }
 

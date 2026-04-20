@@ -294,3 +294,46 @@ export class GitHubStrategy extends BaseOAuthStrategy {
     }
   }
 }
+
+/**
+ * OIDC OAuth strategy
+ */
+export class OidcStrategy extends BaseOAuthStrategy {
+  /**
+   * Fetch user profile from the OIDC userinfo endpoint
+   */
+  async getProfile(data, params) {
+    const userinfoUrl = this.configuration.profile_url
+    if (!userinfoUrl) {
+      throw new Error('OIDC userinfo URL is not configured')
+    }
+
+    const response = await fetch(userinfoUrl, {
+      headers: {
+        Authorization: `Bearer ${data.access_token}`
+      }
+    })
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch OIDC userinfo')
+    }
+
+    const profile = await response.json()
+
+    if (!profile.email) {
+      throw new Error('Email is required but not provided by OIDC userinfo')
+    }
+
+    const id = profile.sub != null ? String(profile.sub) : (profile.id != null ? String(profile.id) : '')
+    if (!id) {
+      throw new Error('OIDC userinfo must include sub')
+    }
+
+    return {
+      id,
+      email: profile.email,
+      name: profile.name ?? profile.preferred_username ?? profile.email.split('@')[0],
+      suggestedUsername: profile.preferred_username ?? this.generateUsernameFromEmail(profile.email)
+    }
+  }
+}
