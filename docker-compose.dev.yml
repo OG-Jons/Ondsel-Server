@@ -137,6 +137,25 @@ services:
     depends_on:
       - matomo-db
 
+  # Keycloak for local OIDC (profile keycloak; realm under docker/keycloak/import)
+  keycloak:
+    profiles:
+      - keycloak
+    image: quay.io/keycloak/keycloak:26.6.1
+    command:
+      - start-dev
+      - --import-realm
+    ports:
+      - "${KEYCLOAK_PORT:-8090}:8080"
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN:-admin}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin@local.test}
+      KC_HOSTNAME: http://localhost:${KEYCLOAK_PORT:-8090}
+      KC_HOSTNAME_BACKCHANNEL_DYNAMIC: "true"
+    volumes:
+      - keycloak_dev_data:/opt/keycloak/data
+      - ./docker/keycloak/import:/opt/keycloak/data/import
+
 volumes:
   mongodb_data:
     name: mongodb_data_dev
@@ -146,3 +165,5 @@ volumes:
     name: matomo_db_dev
   matomo_data:
     name: matomo_data_dev
+  keycloak_dev_data:
+    name: keycloak_dev_data_dev

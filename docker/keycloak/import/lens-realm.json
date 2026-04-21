@@ -1,0 +1,52 @@
+{
+  "realm": "lens",
+  "enabled": true,
+  "displayName": "Lens",
+  "sslRequired": "none",
+  "registrationAllowed": false,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "resetPasswordAllowed": true,
+  "clients": [
+    {
+      "clientId": "lens-backend",
+      "name": "Lens backend OIDC",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "lens-backend-secret",
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "redirectUris": [
+        "http://localhost:3030/oauth/oidc/callback"
+      ],
+      "webOrigins": [
+        "http://localhost:3000",
+        "http://localhost:3030"
+      ],
+      "attributes": {
+        "post.logout.redirect.uris": "+"
+      }
+    }
+  ],
+  "users": [
+    {
+      "username": "admin@local.test",
+      "email": "admin@local.test",
+      "firstName": "Lens",
+      "lastName": "Admin",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "admin@local.test",
+          "temporary": false
+        }
+      ]
+    }
+  ]
+}

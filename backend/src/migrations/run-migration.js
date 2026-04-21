@@ -51,6 +51,7 @@ import {addDefaultAdminUserCommand} from "./create-default-admin-user.command.js
 import {createDefaultSiteConfigCommand} from "./create-default-site-config.command.js";
 import {addOauthToSiteConfigCommand} from "./add-oauth-to-site-config.command.js";
 import { addOidcProviderToSiteConfigCommand } from './add-oidc-provider-to-site-config.command.js';
+import { seedDevKeycloakOidcSiteConfigCommand } from './seed-dev-keycloak-oidc-site-config.command.js';
 import {createDefaultPublisherEntriesCommand} from "./create-default-publisher-entries.command.js";
 import {migrateOndselToAdminOrganizationCommand} from "./migrate-ondsel-to-admin-organization.command.js";
 
@@ -208,6 +209,9 @@ async function runMigration() {
       break;
     case 'addOidcProviderToSiteConfig':
       await addOidcProviderToSiteConfigCommand(app);
+      break;
+    case 'seedDevKeycloakOidcSiteConfig':
+      await seedDevKeycloakOidcSiteConfigCommand(app);
       break;
     case 'createDefaultPublisherEntries':
       await createDefaultPublisherEntriesCommand(app);
