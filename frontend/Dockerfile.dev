@@ -18,5 +18,5 @@ ENV NODE_ENV development
 # Expose development port
 EXPOSE 3000
 
-# Start development server
-CMD [ "npm", "run", "dev", "--", "--host", "0.0.0.0" ]
+# Pre-bundle deps before dev server (avoids first-run 504 race)
+CMD ["sh", "-c", "npx vite optimize && npm run dev -- --host 0.0.0.0"]
