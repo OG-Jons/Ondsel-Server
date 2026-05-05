@@ -8,6 +8,7 @@
 npm run migration addInitialTosPp
 npm run migration createDefaultSiteConfig
 npm run migration addOauthToSiteConfig
+npm run migration addOidcProviderToSiteConfig
 npm run migration addDefaultAdminUser
 npm run migration createDefaultPublisherEntries
 

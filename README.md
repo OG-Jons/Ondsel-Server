@@ -56,6 +56,15 @@ docker-compose -f docker-compose.dev.yml --profile matomo-enabled up --build -d
 
 # To use prebuild docker images
 docker-compose -f docker-compose.prebuilds.yml --profile matomo-enabled up --build -d
+
+# With Keycloak (local OIDC for testing):
+docker-compose -f docker-compose.dev.yml --profile keycloak up --build -d
+
+# Seed OIDC site-config to point at the local Keycloak (one-time, idempotent):
+docker-compose -f docker-compose.dev.yml exec backend npm run migration seedDevKeycloakOidcSiteConfig
+
+# Restart backend so the new OIDC config is picked up:
+docker-compose -f docker-compose.dev.yml restart backend
 ```
 
 That's it! The application should now be running at http://localhost:3000
@@ -72,6 +81,13 @@ That's it! The application should now be running at http://localhost:3000
 - URL: http://localhost:3000
 - Email: admin@local.test
 - Password: admin@local.test
+
+##### Keycloak (local OIDC)
+- URL: http://localhost:8090
+- Admin username: admin
+- Admin password: admin@local.test
+- Test user email: admin@local.test
+- Test user password: admin@local.test
 
 These credentials can be customized using environment variables in the `.env` file.
 

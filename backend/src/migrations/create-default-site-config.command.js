@@ -101,6 +101,17 @@ export async function createDefaultSiteConfigCommand(app) {
           clientSecret: '',
           redirectUri: '',
         },
+        oidc: {
+          enabled: false,
+          clientId: '',
+          clientSecret: '',
+          redirectUri: '',
+          issuer: '',
+          authorizeUrl: '',
+          tokenUrl: '',
+          userinfoUrl: '',
+          signInWithName: '',
+        },
       }
     },
     customized: {

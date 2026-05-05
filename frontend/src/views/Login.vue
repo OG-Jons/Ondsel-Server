@@ -25,7 +25,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
         </v-card>
         <p></p>
         <v-card :title="`Login to ${siteConfig?.siteTitle}`" width="26em" class="pa-2 mt-16">
-          <v-card-text :class="{ 'pb-6': !(isGoogleOAuthEnabled || isGitHubOAuthEnabled) }">
+          <v-card-text :class="{ 'pb-6': !isAnyOAuthEnabled }">
             <template v-slot:loader="{ isActive }">
               <v-progress-linear
                 :active="isAuthenticatePending"
@@ -73,7 +73,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
                 >Submit</v-btn>
               </v-row>
 
-              <v-row v-if="isGoogleOAuthEnabled || isGitHubOAuthEnabled" class="mt-4">
+              <v-row v-if="isAnyOAuthEnabled" class="mt-4">
                 <v-col cols="12">
                   <div class="d-flex align-center my-2">
                     <v-divider></v-divider>
@@ -82,60 +82,89 @@ SPDX-License-Identifier: AGPL-3.0-or-later
                   </div>
                 </v-col>
               </v-row>
-              <div v-if="isOAuthRedirecting && (isGoogleOAuthEnabled || isGitHubOAuthEnabled)" class="d-flex flex-column align-center justify-center mt-4" style="min-height: 40px;">
+              <div v-if="isOAuthRedirecting && isAnyOAuthEnabled" class="d-flex flex-column align-center justify-center mt-4" style="min-height: 40px;">
                 <v-progress-circular
                   indeterminate
                   color="primary"
                   size="40"
                   width="4"
                 ></v-progress-circular>
-                <span class="mt-2 text-caption text-grey">Redirecting to {{ oAuthRedirectingProvider === 'google' ? 'Google' : 'GitHub' }}...</span>
+                <span class="mt-2 text-caption text-grey">Redirecting to {{ oauthRedirectLabel }}...</span>
               </div>
-              <v-row v-else-if="isGoogleOAuthEnabled || isGitHubOAuthEnabled">
-                <v-col v-if="isGoogleOAuthEnabled" cols="12" class="text-center" style="position: relative;">
-                  <img 
-                    src="/img/google-signin-button.svg" 
-                    alt="Sign in with Google"
-                    @click="!isAuthenticatePending && loginWithOAuth('google')"
-                    :style="{ 
-                      height: '40px', 
-                      width: 'auto', 
-                      cursor: isAuthenticatePending ? 'not-allowed' : 'pointer',
-                      opacity: isAuthenticatePending ? 0.6 : 1,
-                      display: 'block',
-                      margin: '0 auto'
-                    }"
-                    class="google-signin-button"
-                  />
-                </v-col>
-                <v-col v-if="isGitHubOAuthEnabled" cols="12" class="text-center" style="position: relative;">
-                  <v-btn
-                    variant="outlined"
-                    size="large"
-                    :disabled="isAuthenticatePending"
-                    @click="!isAuthenticatePending && loginWithOAuth('github')"
-                    :style="{ 
-                      height: '40px',
-                      width: 'auto',
-                      cursor: isAuthenticatePending ? 'not-allowed' : 'pointer',
-                      opacity: isAuthenticatePending ? 0.6 : 1,
-                      display: 'inline-flex',
-                      backgroundColor: '#FFFFFF',
-                      borderColor: '#747775',
-                      borderWidth: '1px',
-                      borderStyle: 'solid',
-                      color: '#3c4043 !important',
-                      textTransform: 'none',
-                      fontSize: '14px',
-                      fontWeight: '500',
-                      letterSpacing: '0.25px',
-                      padding: '0 16px'
-                    }"
-                    class="github-signin-button"
-                  >
-                    <v-icon start size="18" style="margin-right: 10px; color: #24292f;">mdi-github</v-icon>
-                    <span style="color: #3c4043;">Sign in with GitHub</span>
-                  </v-btn>
+              <v-row v-else-if="isAnyOAuthEnabled">
+                <v-col cols="12">
+                  <div class="oauth-provider-buttons">
+                    <div v-if="isGoogleOAuthEnabled" class="oauth-provider-buttons__cell">
+                      <img
+                        src="/img/google-signin-button.svg"
+                        alt="Sign in with Google"
+                        @click="!isAuthenticatePending && loginWithOAuth('google')"
+                        :style="{
+                          height: '40px',
+                          width: 'auto',
+                          maxWidth: '100%',
+                          cursor: isAuthenticatePending ? 'not-allowed' : 'pointer',
+                          opacity: isAuthenticatePending ? 0.6 : 1,
+                          display: 'block',
+                          margin: '0 auto'
+                        }"
+                        class="google-signin-button"
+                      />
+                    </div>
+                    <div v-if="isGitHubOAuthEnabled" class="oauth-provider-buttons__cell">
+                      <v-btn
+                        variant="outlined"
+                        size="large"
+                        :disabled="isAuthenticatePending"
+                        @click="!isAuthenticatePending && loginWithOAuth('github')"
+                        :style="{
+                          height: '40px',
+                          width: 'auto',
+                          maxWidth: '100%',
+                          cursor: isAuthenticatePending ? 'not-allowed' : 'pointer',
+                          opacity: isAuthenticatePending ? 0.6 : 1,
+                          display: 'inline-flex',
+                          backgroundColor: '#FFFFFF',
+                          borderColor: '#747775',
+                          borderWidth: '1px',
+                          borderStyle: 'solid',
+                          color: '#3c4043 !important',
+                          textTransform: 'none',
+                          fontSize: '14px',
+                          fontWeight: '500',
+                          letterSpacing: '0.25px',
+                          padding: '0 16px'
+                        }"
+                        class="github-signin-button"
+                      >
+                        <v-icon start size="18" style="margin-right: 10px; color: #24292f;">mdi-github</v-icon>
+                        <span style="color: #3c4043;">Sign in with GitHub</span>
+                      </v-btn>
+                    </div>
+                    <div v-if="isOidcOAuthEnabled" class="oauth-provider-buttons__cell">
+                      <v-btn
+                        variant="outlined"
+                        size="large"
+                        :disabled="isAuthenticatePending"
+                        @click="!isAuthenticatePending && loginWithOAuth('oidc')"
+                        :style="{
+                          height: '40px',
+                          width: 'auto',
+                          maxWidth: '100%',
+                          cursor: isAuthenticatePending ? 'not-allowed' : 'pointer',
+                          opacity: isAuthenticatePending ? 0.6 : 1,
+                          display: 'inline-flex',
+                          textTransform: 'none',
+                          fontSize: '14px',
+                          fontWeight: '500',
+                          padding: '0 16px'
+                        }"
+                      >
+                        <v-icon start size="18" class="mr-2">mdi-shield-key-outline</v-icon>
+                        {{ oidcSignInButtonLabel }}
+                      </v-btn>
+                    </div>
+                  </div>
                 </v-col>
               </v-row>
             </v-form>
@@ -186,7 +215,6 @@ import { getTextColorForBackground } from '@/genericHelpers';
 
 export default {
   name: 'Login',
-  components: {ForgotPasswordDialog, Main},
   components: {ForgotPasswordDialog, MarkdownViewer, Main},
   data() {
     return {
@@ -220,6 +248,24 @@ export default {
     },
     isGitHubOAuthEnabled() {
       return this.siteConfig?.oauth?.providers?.github?.enabled === true;
+    },
+    isOidcOAuthEnabled() {
+      return this.siteConfig?.oauth?.providers?.oidc?.enabled === true;
+    },
+    isAnyOAuthEnabled() {
+      return this.isGoogleOAuthEnabled || this.isGitHubOAuthEnabled || this.isOidcOAuthEnabled;
+    },
+    oidcSignInButtonLabel() {
+      const name = this.siteConfig?.oauth?.providers?.oidc?.signInWithName?.trim();
+      return `Sign in with ${name || 'SSO'}`;
+    },
+    oauthRedirectLabel() {
+      const p = this.oAuthRedirectingProvider;
+      const name = this.siteConfig?.oauth?.providers?.oidc?.signInWithName?.trim();
+      if (p === 'google') return 'Google';
+      if (p === 'github') return 'GitHub';
+      if (p === 'oidc') return name || 'SSO';
+      return '';
     },
   },
   mounted() {
@@ -292,6 +338,41 @@ export default {
 ::v-deep(.compact-banner .markdown h1),
 ::v-deep(.compact-banner .markdown h2) {
   margin: 0.25em 0;
+}
+
+.oauth-provider-buttons {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+  justify-items: stretch;
+  width: 100%;
+}
+
+.oauth-provider-buttons__cell {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  min-width: 0;
+}
+
+/* Center a lone last row (e.g. 3rd of 3, 5th of 5) under the row above */
+.oauth-provider-buttons__cell:last-child:nth-child(odd) {
+  grid-column: 1 / -1;
+  justify-self: center;
+  width: auto;
+  max-width: 100%;
+}
+
+@media (max-width: 420px) {
+  .oauth-provider-buttons {
+    grid-template-columns: 1fr;
+  }
+
+  .oauth-provider-buttons__cell:last-child:nth-child(odd) {
+    grid-column: auto;
+    justify-self: stretch;
+    width: 100%;
+  }
 }
 
 </style>

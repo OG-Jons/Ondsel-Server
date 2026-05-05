@@ -226,8 +226,11 @@ export default {
       ];
     },
     providerName() {
+      const name = this.siteConfig?.oauth?.providers?.oidc?.signInWithName?.trim();
       const providerMap = {
-        google: 'Google'
+        google: 'Google',
+        github: 'GitHub',
+        oidc: name || 'SSO'
       };
       return providerMap[this.oauthData.provider] || this.oauthData.provider;
     }

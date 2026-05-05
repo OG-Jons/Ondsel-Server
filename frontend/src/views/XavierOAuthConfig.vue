@@ -139,6 +139,140 @@ SPDX-License-Identifier: AGPL-3.0-or-later
               </v-card-text>
             </v-card>
           </v-col>
+          <v-col cols="12">
+            <v-card class="ma-2" elevation="1">
+              <v-card-title>OpenID Connect (OIDC)</v-card-title>
+              <v-card-text>
+                <p class="text-caption text-grey-darken-1 mb-4">
+                  See the
+                  <a
+                    href="https://github.com/FreeCAD/Ondsel-Server/blob/main/docs/admin-panel.md#openid-connect-oidc"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >OpenID Connect (OIDC) setup instructions</a>
+                  in the OAuth Configuration documentation. Use the Redirect URI shown below when configuring your OIDC client.
+                </p>
+
+                <v-switch
+                  v-model="oidcConfig.enabled"
+                  label="Enable OIDC sign-in"
+                  color="primary"
+                ></v-switch>
+
+                <template v-if="!oidcConfig.enabled">
+                  <p class="text-caption text-grey-darken-1 mb-4">
+                    Enable OIDC sign-in above to configure Issuer URL, Client ID, Client Secret, sign-in label, and endpoint URLs.
+                  </p>
+                </template>
+
+                <v-text-field
+                  v-model="oidcConfig.issuer"
+                  label="Issuer URL"
+                  :rules="oidcRules.issuer"
+                  :disabled="isSaving || !oidcConfig.enabled"
+                  type="text"
+                  hint="e.g. https://auth.example.com/realms/myrealm"
+                  persistent-hint
+                  class="mb-2"
+                ></v-text-field>
+
+                <v-text-field
+                  v-model="oidcConfig.clientId"
+                  label="Client ID"
+                  :rules="oidcRules.clientId"
+                  :disabled="isSaving || !oidcConfig.enabled"
+                  type="text"
+                  hint="OIDC client ID from your identity provider"
+                  persistent-hint
+                  class="mb-2"
+                ></v-text-field>
+
+                <v-text-field
+                  v-model="oidcConfig.clientSecret"
+                  label="Client Secret"
+                  :rules="oidcRules.clientSecret"
+                  :disabled="isSaving || !oidcConfig.enabled"
+                  type="password"
+                  hint="OIDC client secret (masked for security)"
+                  persistent-hint
+                  class="mb-2"
+                ></v-text-field>
+
+                <v-text-field
+                  v-model="oidcConfig.signInWithName"
+                  label="Sign-in button suffix"
+                  :rules="oidcRules.signInWithName"
+                  :disabled="isSaving || !oidcConfig.enabled"
+                  type="text"
+                  hint="Text after “Sign in with” on login and sign-up (leave empty for SSO)"
+                  persistent-hint
+                  class="mb-2"
+                ></v-text-field>
+
+                <v-btn
+                  color="secondary"
+                  variant="tonal"
+                  class="mb-4"
+                  :disabled="isSaving || !oidcConfig.enabled || !oidcConfig.issuer?.trim() || isFetchingOidcEndpoints"
+                  :loading="isFetchingOidcEndpoints"
+                  @click="fetchOidcEndpoints"
+                >
+                  Fetch endpoints from issuer
+                </v-btn>
+
+                <v-text-field
+                  v-model="oidcConfig.authorizeUrl"
+                  label="Authorization endpoint URL"
+                  :rules="oidcRules.authorizeUrl"
+                  :disabled="isSaving || !oidcConfig.enabled"
+                  type="text"
+                  hint="Paste from your IdP or use Fetch endpoints from issuer"
+                  persistent-hint
+                  class="mb-2"
+                ></v-text-field>
+
+                <v-text-field
+                  v-model="oidcConfig.tokenUrl"
+                  label="Token endpoint URL"
+                  :rules="oidcRules.tokenUrl"
+                  :disabled="isSaving || !oidcConfig.enabled"
+                  type="text"
+                  hint="Paste from your IdP or use Fetch endpoints from issuer"
+                  persistent-hint
+                  class="mb-2"
+                ></v-text-field>
+
+                <v-text-field
+                  v-model="oidcConfig.userinfoUrl"
+                  label="Userinfo endpoint URL"
+                  :rules="oidcRules.userinfoUrl"
+                  :disabled="isSaving || !oidcConfig.enabled"
+                  type="text"
+                  hint="Paste from your IdP or use Fetch endpoints from issuer"
+                  persistent-hint
+                  class="mb-2"
+                ></v-text-field>
+
+                <v-text-field
+                  :model-value="oidcRedirectUri"
+                  label="Redirect URI"
+                  readonly
+                  hint="Use this redirect URI when configuring your OIDC client"
+                  persistent-hint
+                  class="mb-2"
+                >
+                  <template v-slot:append>
+                    <v-btn
+                      icon="mdi-content-copy"
+                      variant="text"
+                      size="small"
+                      @click="copyToClipboard(oidcRedirectUri)"
+                    ></v-btn>
+                  </template>
+                </v-text-field>
+              </v-card-text>
+            </v-card>
+          </v-col>
         </v-row>
       </v-form>
     </v-card-text>
@@ -183,6 +317,17 @@ export default {
         clientId: '',
         clientSecret: '',
       },
+      oidcConfig: {
+        enabled: false,
+        clientId: '',
+        clientSecret: '',
+        issuer: '',
+        authorizeUrl: '',
+        tokenUrl: '',
+        userinfoUrl: '',
+        signInWithName: '',
+      },
+      isFetchingOidcEndpoints: false,
       showSnackbar: false,
       snackbarMessage: '',
       snackbarColor: 'success',
@@ -214,6 +359,51 @@ export default {
           }
         ],
       },
+      oidcRules: {
+        issuer: [
+          v => {
+            if (!this.oidcConfig.enabled) return true;
+            return !!v?.trim() || 'Issuer URL is required when OIDC is enabled';
+          }
+        ],
+        clientId: [
+          v => {
+            if (!this.oidcConfig.enabled) return true;
+            return !!v?.trim() || 'Client ID is required when OIDC is enabled';
+          }
+        ],
+        clientSecret: [
+          v => {
+            if (!this.oidcConfig.enabled) return true;
+            return !!v?.trim() || 'Client Secret is required when OIDC is enabled';
+          }
+        ],
+        signInWithName: [
+          v => {
+            if (!this.oidcConfig.enabled) return true;
+            if (!v || !String(v).trim()) return true;
+            return String(v).trim().length <= 20 || 'Use at most 20 characters';
+          }
+        ],
+        authorizeUrl: [
+          v => {
+            if (!this.oidcConfig.enabled) return true;
+            return !!v?.trim() || 'Authorization endpoint URL is required when OIDC is enabled';
+          }
+        ],
+        tokenUrl: [
+          v => {
+            if (!this.oidcConfig.enabled) return true;
+            return !!v?.trim() || 'Token endpoint URL is required when OIDC is enabled';
+          }
+        ],
+        userinfoUrl: [
+          v => {
+            if (!this.oidcConfig.enabled) return true;
+            return !!v?.trim() || 'Userinfo endpoint URL is required when OIDC is enabled';
+          }
+        ],
+      },
     }
   },
   async created() {
@@ -225,7 +415,7 @@ export default {
     }
   },
   computed: {
-    ...mapState('auth', ['user']),
+    ...mapState('auth', ['user', 'accessToken']),
     ...mapGetters('app', ['siteConfig']),
     googleRedirectUri() {
       const baseUrl = import.meta.env.VITE_APP_API_URL?.replace(/\/$/, '') || window.location.origin;
@@ -234,6 +424,10 @@ export default {
     githubRedirectUri() {
       const baseUrl = import.meta.env.VITE_APP_API_URL?.replace(/\/$/, '') || window.location.origin;
       return `${baseUrl}/oauth/github/callback`;
+    },
+    oidcRedirectUri() {
+      const baseUrl = import.meta.env.VITE_APP_API_URL?.replace(/\/$/, '') || window.location.origin;
+      return `${baseUrl}/oauth/oidc/callback`;
     },
   },
   watch: {
@@ -254,6 +448,19 @@ export default {
               clientSecret: newVal.oauth.providers.github.clientSecret || '',
             };
           }
+          if (newVal.oauth.providers.oidc && !this.oidcConfig.clientId) {
+            const o = newVal.oauth.providers.oidc;
+            this.oidcConfig = {
+              enabled: o.enabled || false,
+              clientId: o.clientId || '',
+              clientSecret: o.clientSecret || '',
+              issuer: o.issuer || '',
+              authorizeUrl: o.authorizeUrl || '',
+              tokenUrl: o.tokenUrl || '',
+              userinfoUrl: o.userinfoUrl || '',
+              signInWithName: o.signInWithName || '',
+            };
+          }
         }
       },
       immediate: true,
@@ -269,6 +476,13 @@ export default {
     },
     'githubConfig.enabled'() {
       // Trigger validation when enabled state changes
+      this.$nextTick(() => {
+        if (this.$refs.form) {
+          this.$refs.form.validate();
+        }
+      });
+    },
+    'oidcConfig.enabled'() {
       this.$nextTick(() => {
         if (this.$refs.form) {
           this.$refs.form.validate();
@@ -299,6 +513,17 @@ export default {
               clientSecret: this.githubConfig.clientSecret.trim(),
               redirectUri: this.githubRedirectUri,
             },
+            oidc: {
+              enabled: this.oidcConfig.enabled,
+              clientId: this.oidcConfig.clientId.trim(),
+              clientSecret: this.oidcConfig.clientSecret.trim(),
+              redirectUri: this.oidcRedirectUri,
+              issuer: this.oidcConfig.issuer.trim(),
+              authorizeUrl: (this.oidcConfig.authorizeUrl || '').trim(),
+              tokenUrl: (this.oidcConfig.tokenUrl || '').trim(),
+              userinfoUrl: (this.oidcConfig.userinfoUrl || '').trim(),
+              signInWithName: (this.oidcConfig.signInWithName || '').trim().slice(0, 20),
+            },
           }
         };
 
@@ -326,7 +551,39 @@ export default {
       this.snackbarMessage = message;
       this.snackbarColor = color;
       this.showSnackbar = true;
-    }
+    },
+    async fetchOidcEndpoints() {
+      this.isFetchingOidcEndpoints = true;
+      try {
+        const baseUrl = import.meta.env.VITE_APP_API_URL?.replace(/\/$/, '') || window.location.origin;
+        const res = await fetch(`${baseUrl}/oidc-discovery`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: this.accessToken,
+          },
+          body: JSON.stringify({ issuer: this.oidcConfig.issuer.trim() }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          throw new Error(data.error || `Discovery failed (${res.status})`);
+        }
+        this.oidcConfig.authorizeUrl = data.authorizeUrl || '';
+        this.oidcConfig.tokenUrl = data.tokenUrl || '';
+        this.oidcConfig.userinfoUrl = data.userinfoUrl || '';
+        this.showMessage('Endpoints loaded from issuer', 'success');
+        this.$nextTick(() => {
+          if (this.$refs.form) {
+            this.$refs.form.validate();
+          }
+        });
+      } catch (e) {
+        console.error(e);
+        this.showMessage(e.message || 'OIDC discovery failed', 'error');
+      } finally {
+        this.isFetchingOidcEndpoints = false;
+      }
+    },
   }
 }
 </script>

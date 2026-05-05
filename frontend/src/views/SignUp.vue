@@ -16,25 +16,26 @@ SPDX-License-Identifier: AGPL-3.0-or-later
           indeterminate
         ></v-progress-linear>
       </template>
-      <v-card-text v-if="isGoogleOAuthEnabled || isGitHubOAuthEnabled" class="pb-4">
-        <div v-if="isOAuthRedirecting && (isGoogleOAuthEnabled || isGitHubOAuthEnabled)" class="d-flex flex-column align-center justify-center" style="min-height: 40px;">
+      <v-card-text v-if="isAnyOAuthEnabled" class="pb-4">
+        <div v-if="isOAuthRedirecting && isAnyOAuthEnabled" class="d-flex flex-column align-center justify-center" style="min-height: 40px;">
           <v-progress-circular
             indeterminate
             color="primary"
             size="40"
             width="4"
           ></v-progress-circular>
-          <span class="mt-2 text-caption text-grey">Redirecting to {{ oAuthRedirectingProvider === 'google' ? 'Google' : 'GitHub' }}...</span>
+          <span class="mt-2 text-caption text-grey">Redirecting to {{ oauthRedirectLabel }}...</span>
         </div>
-        <v-row v-else-if="isGoogleOAuthEnabled || isGitHubOAuthEnabled" no-gutters>
-          <v-col v-if="isGoogleOAuthEnabled" :cols="isGitHubOAuthEnabled ? 6 : 12" class="text-center" :class="isGitHubOAuthEnabled ? 'pr-1' : ''" style="position: relative;">
-            <img 
-              src="/img/google-signin-button.svg" 
+        <div v-else-if="isAnyOAuthEnabled" class="oauth-provider-buttons">
+          <div v-if="isGoogleOAuthEnabled" class="oauth-provider-buttons__cell">
+            <img
+              src="/img/google-signin-button.svg"
               alt="Sign in with Google"
               @click="!isCreatePending && loginWithOAuth('google')"
-              :style="{ 
-                height: '40px', 
-                width: 'auto', 
+              :style="{
+                height: '40px',
+                width: 'auto',
+                maxWidth: '100%',
                 cursor: isCreatePending ? 'not-allowed' : 'pointer',
                 opacity: isCreatePending ? 0.6 : 1,
                 display: 'block',
@@ -42,16 +43,17 @@ SPDX-License-Identifier: AGPL-3.0-or-later
               }"
               class="google-signin-button"
             />
-          </v-col>
-          <v-col v-if="isGitHubOAuthEnabled" :cols="isGoogleOAuthEnabled ? 6 : 12" class="text-center" :class="isGoogleOAuthEnabled ? 'pl-1' : ''" style="position: relative;">
+          </div>
+          <div v-if="isGitHubOAuthEnabled" class="oauth-provider-buttons__cell">
             <v-btn
               variant="outlined"
               size="large"
               :disabled="isCreatePending"
               @click="!isCreatePending && loginWithOAuth('github')"
-              :style="{ 
+              :style="{
                 height: '40px',
                 width: 'auto',
+                maxWidth: '100%',
                 cursor: isCreatePending ? 'not-allowed' : 'pointer',
                 opacity: isCreatePending ? 0.6 : 1,
                 display: 'inline-flex',
@@ -71,9 +73,32 @@ SPDX-License-Identifier: AGPL-3.0-or-later
               <v-icon start size="18" style="margin-right: 10px; color: #24292f;">mdi-github</v-icon>
               <span style="color: #3c4043;">Sign in with GitHub</span>
             </v-btn>
-          </v-col>
-        </v-row>
-        <div v-if="isGoogleOAuthEnabled || isGitHubOAuthEnabled" class="d-flex align-center my-3">
+          </div>
+          <div v-if="isOidcOAuthEnabled" class="oauth-provider-buttons__cell">
+            <v-btn
+              variant="outlined"
+              size="large"
+              :disabled="isCreatePending"
+              @click="!isCreatePending && loginWithOAuth('oidc')"
+              :style="{
+                height: '40px',
+                width: 'auto',
+                maxWidth: '100%',
+                cursor: isCreatePending ? 'not-allowed' : 'pointer',
+                opacity: isCreatePending ? 0.6 : 1,
+                display: 'inline-flex',
+                textTransform: 'none',
+                fontSize: '14px',
+                fontWeight: '500',
+                padding: '0 16px'
+              }"
+            >
+              <v-icon start size="18" class="mr-2">mdi-shield-key-outline</v-icon>
+              {{ oidcSignInButtonLabel }}
+            </v-btn>
+          </div>
+        </div>
+        <div v-if="isAnyOAuthEnabled" class="d-flex align-center my-3">
           <v-divider></v-divider>
           <span class="mx-4 text-grey">OR</span>
           <v-divider></v-divider>
@@ -295,6 +320,24 @@ export default {
     isGitHubOAuthEnabled() {
       return this.siteConfig?.oauth?.providers?.github?.enabled === true;
     },
+    isOidcOAuthEnabled() {
+      return this.siteConfig?.oauth?.providers?.oidc?.enabled === true;
+    },
+    isAnyOAuthEnabled() {
+      return this.isGoogleOAuthEnabled || this.isGitHubOAuthEnabled || this.isOidcOAuthEnabled;
+    },
+    oidcSignInButtonLabel() {
+      const name = this.siteConfig?.oauth?.providers?.oidc?.signInWithName?.trim();
+      return `Sign in with ${name || 'SSO'}`;
+    },
+    oauthRedirectLabel() {
+      const p = this.oAuthRedirectingProvider;
+      const name = this.siteConfig?.oauth?.providers?.oidc?.signInWithName?.trim();
+      if (p === 'google') return 'Google';
+      if (p === 'github') return 'GitHub';
+      if (p === 'oidc') return name || 'SSO';
+      return '';
+    },
     usageTypes() {
       return [
         { value: 'work', title: `I want to use ${this.siteConfig?.siteTitle} for work` },
@@ -401,5 +444,38 @@ export default {
 </script>
 
 <style scoped>
+.oauth-provider-buttons {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+  justify-items: stretch;
+  width: 100%;
+}
 
+.oauth-provider-buttons__cell {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  min-width: 0;
+}
+
+/* Center a lone last row (e.g. 3rd of 3, 5th of 5) under the row above */
+.oauth-provider-buttons__cell:last-child:nth-child(odd) {
+  grid-column: 1 / -1;
+  justify-self: center;
+  width: auto;
+  max-width: 100%;
+}
+
+@media (max-width: 420px) {
+  .oauth-provider-buttons {
+    grid-template-columns: 1fr;
+  }
+
+  .oauth-provider-buttons__cell:last-child:nth-child(odd) {
+    grid-column: auto;
+    justify-self: stretch;
+    width: 100%;
+  }
+}
 </style>
