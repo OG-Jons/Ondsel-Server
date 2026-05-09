@@ -55,6 +55,13 @@ SPDX-License-Identifier: AGPL-3.0-or-later
         location="start"
       >Click new thumbnail</v-tooltip>
     </v-btn>
+    <v-btn icon flat :disabled="model && !model.haveWriteAccess" @click="runScriptDrawerClicked">
+      <v-icon>mdi-code-tags</v-icon>
+      <v-tooltip
+        activator="parent"
+        location="start"
+      >Run script</v-tooltip>
+    </v-btn>
     <!-- <v-btn v-if="model && siteConfig?.desktopApp?.enabledOpenInDesktopApp" icon flat @click="openModelInDesktopAppDialog">
       <v-icon>mdi-open-in-app</v-icon>
       <v-tooltip
@@ -229,6 +236,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
     >
       <MangeSharedModels v-if="drawerActiveWindow === 'sharedModel'" :model="model"/>
       <ModelInfo ref="modelInfoDrawer" v-else-if="drawerActiveWindow === 'modelInfo'" :model="model"/>
+      <RunScriptPanel v-else-if="drawerActiveWindow === 'runScript'" :model="model"/>
     </v-navigation-drawer>
   </div>
   <launch-desktop-app-dialog
@@ -252,6 +260,7 @@ import ModelInfo from '@/components/ModelInfo.vue';
 import ObjectsListView from '@/components/ObjectsListView.vue';
 import openDesktopAppMixin from '@/mixins/openDesktopAppMixin';
 import LaunchDesktopAppDialog from '@/components/LaunchDesktopAppDialog.vue';
+import RunScriptPanel from '@/components/RunScriptPanel.vue';
 
 const { Model, SharedModel, Workspace, Organization } = models.api;
 
@@ -265,6 +274,7 @@ export default {
     ModelInfo,
     ObjectsListView,
     LaunchDesktopAppDialog,
+    RunScriptPanel,
   },
   mixins: [openDesktopAppMixin],
   data: () => ({
@@ -499,6 +509,14 @@ export default {
         this.isDrawerOpen = !this.isDrawerOpen;
       } else {
         this.drawerActiveWindow = 'modelInfo'; // this will cause a fresh mount which invokes a data reload
+        this.isDrawerOpen = true;
+      }
+    },
+    runScriptDrawerClicked() {
+      if (this.drawerActiveWindow === 'runScript') {
+        this.isDrawerOpen = !this.isDrawerOpen;
+      } else {
+        this.drawerActiveWindow = 'runScript';
         this.isDrawerOpen = true;
       }
     },

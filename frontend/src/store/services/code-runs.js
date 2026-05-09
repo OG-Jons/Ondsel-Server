@@ -1,0 +1,61 @@
+// SPDX-FileCopyrightText: 2026 Amritpal Singh <amrit3701@gmail.com>
+//
+// SPDX-License-Identifier: AGPL-3.0-or-later
+
+import feathersClient, { makeServicePlugin, BaseModel } from '@/plugins/feathers-client'
+
+class CodeRun extends BaseModel {
+  constructor(data, options) {
+    super(data, options)
+  }
+  // Required for $FeathersVuex plugin to work after production transpile.
+  static modelName = 'CodeRun'
+  // Define default properties here
+  static instanceDefaults() {
+    return {
+      status: 'queued',
+      stdout: '',
+      stderr: '',
+    }
+  }
+}
+
+const servicePath = 'code-runs'
+const servicePlugin = makeServicePlugin({
+  'Model': CodeRun,
+  service: feathersClient.service(servicePath),
+  servicePath
+})
+
+// Setup the client-side Feathers hooks.
+feathersClient.service(servicePath).hooks({
+  before: {
+    all: [],
+    find: [],
+    get: [],
+    create: [],
+    update: [],
+    patch: [],
+    remove: []
+  },
+  after: {
+    all: [],
+    find: [],
+    get: [],
+    create: [],
+    update: [],
+    patch: [],
+    remove: []
+  },
+  error: {
+    all: [],
+    find: [],
+    get: [],
+    create: [],
+    update: [],
+    patch: [],
+    remove: []
+  }
+})
+
+export default servicePlugin

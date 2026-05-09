@@ -23,6 +23,7 @@ import orgSecondaryReference from '@/store/services/orgSecondaryReferences';
 import notifications from "@/store/services/notifications";
 import publisher from "@/store/services/publisher";
 import siteConfig from "@/store/services/site-config";
+import codeRuns from "@/store/services/code-runs";
 
 const store =  new Vuex.Store({
   state: {},
@@ -51,6 +52,7 @@ const store =  new Vuex.Store({
     notifications,
     publisher,
     siteConfig,
+    codeRuns,
   ]
 })
 

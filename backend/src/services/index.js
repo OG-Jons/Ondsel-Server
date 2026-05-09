@@ -20,6 +20,8 @@ import { email } from './email/email.js'
 
 import { runnerLogs } from './runner-logs/runner-logs.js'
 
+import { codeRuns } from './code-runs/code-runs.js'
+
 import { accountEvent } from './account-event/account-event.js'
 
 import { acceptAgreement } from './agreements/accept/accept.js'
@@ -72,6 +74,8 @@ export const services = (app) => {
   app.configure(email)
 
   app.configure(runnerLogs)
+
+  app.configure(codeRuns)
 
   app.configure(accountEvent)
 
