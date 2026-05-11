@@ -35,6 +35,6 @@ export default {
   max-width: 600px;
   width: 100%;
   text-align: center;
-  color: #2c3e50;
+  color: rgb(var(--v-theme-on-surface));
 }
 </style>

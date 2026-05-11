@@ -212,6 +212,17 @@ SPDX-License-Identifier: AGPL-3.0-or-later
             account settings
           </v-btn>
         </v-list-item>
+        <v-divider class="my-2"></v-divider>
+        <v-list-subheader>Theme</v-list-subheader>
+        <v-list-item
+          v-for="option in themeOptions"
+          :key="option.value"
+          :prepend-icon="option.icon"
+          :title="option.label"
+          :active="themePref === option.value"
+          density="compact"
+          @click="setTheme(option.value)"
+        ></v-list-item>
       </v-list>
       <v-divider></v-divider>
       <v-card-actions>
@@ -232,6 +243,17 @@ SPDX-License-Identifier: AGPL-3.0-or-later
 import { mapActions, mapState, mapGetters } from 'vuex';
 import { getInitials } from '@/genericHelpers';
 import OrganizationMixin from '@/mixins/organizationMixin';
+import {
+  getThemePreference,
+  resolveActiveTheme,
+  setThemePreference,
+} from '@/themePreference';
+
+const THEME_OPTIONS = [
+  { value: 'light', label: 'Light', icon: 'mdi-white-balance-sunny' },
+  { value: 'dark', label: 'Dark', icon: 'mdi-weather-night' },
+  { value: 'system', label: 'System', icon: 'mdi-theme-light-dark' },
+];
 
 export default {
   name: "MainNavigationBar",
@@ -242,6 +264,8 @@ export default {
     searchText: '',
     drawer: null,
     rail: false,
+    themePref: getThemePreference(),
+    themeOptions: THEME_OPTIONS,
   }),
   computed: {
     ...mapState('auth', { loggedInUser: 'payload' }),
@@ -335,6 +359,11 @@ export default {
     gotoAccountSettings() {
       this.$router.push({name: 'AccountSettings', params: {slug: this.user.username}});
       this.menu = false;
+    },
+    setTheme(pref) {
+      this.themePref = pref;
+      setThemePreference(pref);
+      this.$vuetify.theme.global.name = resolveActiveTheme(pref);
     },
     adjustRail() {
       this.rail = !!this.isMobile;

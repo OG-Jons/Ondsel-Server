@@ -37,16 +37,16 @@ SPDX-License-Identifier: AGPL-3.0-or-later
     </v-sheet>
     <v-sheet
       v-if="viewChosen === viewEnum.default"
-      color="#F4F4F4"
+      color="placeholder"
       height="30em"
       width="100%"
       class="d-flex justify-center align-center"
     >
-      <v-icon icon="mdi-file" style="color: #8D8D8D" cover />
+      <v-icon icon="mdi-file" class="text-muted" cover />
     </v-sheet>
     <v-sheet
       v-if="viewChosen === viewEnum.markdown"
-      color="#F4F4F4"
+      color="placeholder"
       height="30em"
       width="100%"
       class="pa-4"

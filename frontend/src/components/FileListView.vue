@@ -19,13 +19,13 @@ SPDX-License-Identifier: AGPL-3.0-or-later
       </v-sheet>
       <v-sheet>
         <v-btn
-          :color="iconViewMode ? '#757575' : '#F5F5F5'"
+          :color="iconViewMode ? 'muted' : 'placeholder'"
           @click="iconViewMode = true"
         >
           <v-icon>mdi-view-grid</v-icon>
         </v-btn>
         <v-btn
-          :color="!iconViewMode ? '#757575' : '#F5F5F5'"
+          :color="!iconViewMode ? 'muted' : 'placeholder'"
           @click="iconViewMode = false"
         >
           <v-icon>mdi-view-list</v-icon>
@@ -73,7 +73,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
         >
           <v-icon
             icon="mdi-folder"
-            style="color: #8D8D8D"
+            class="text-muted"
             cover
           />
         </v-sheet>
@@ -113,11 +113,11 @@ SPDX-License-Identifier: AGPL-3.0-or-later
         ></v-img>
         <v-sheet
           v-else
-          color="#F4F4F4"
+          color="placeholder"
           height="8em"
           class="d-flex justify-center align-center"
         >
-          <v-icon icon="mdi-file" style="color: #8D8D8D" cover />
+          <v-icon icon="mdi-file" class="text-muted" cover />
         </v-sheet>
         <v-sheet width="8em" class="d-flex justify-center text-body-2 text-center">
           {{ wrapify(file.custFileName) }}

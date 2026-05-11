@@ -9,7 +9,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
   <v-app>
     <MainNavigationBar v-if="!$route.meta.isWindowLoadedInIframe"/>
     <v-main class="my-4 mx-2">
-      <v-sheet class="fill-height" style="background: #ffffff;" border rounded="lg">
+      <v-sheet class="fill-height" color="surface" border rounded="lg">
         <router-view/>
       </v-sheet>
     </v-main>
@@ -19,6 +19,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
 <script>
 import MainNavigationBar from '@/layouts/default/MainNavigationBar.vue';
 import { mapActions, mapGetters, mapState } from 'vuex';
+import { getThemePreference, resolveActiveTheme, watchSystemTheme } from '@/themePreference';
 
 export default {
   name: 'App',
@@ -28,9 +29,24 @@ export default {
     ...mapState('auth', ['user']),
   },
   data: () => ({
+    _themeUnsubscribe: null,
   }),
   async created() {
     await this.loadSiteConfig();
+  },
+  mounted() {
+    // When the user's preference is "system", track OS theme changes live.
+    this._themeUnsubscribe = watchSystemTheme((systemTheme) => {
+      if (getThemePreference() === 'system') {
+        this.$vuetify.theme.global.name = systemTheme;
+      }
+    });
+    // Reconcile in case Vuetify's initial pick drifted from the current
+    // localStorage value (e.g., another tab updated it).
+    this.$vuetify.theme.global.name = resolveActiveTheme(getThemePreference());
+  },
+  beforeUnmount() {
+    this._themeUnsubscribe?.();
   },
   watch: {
     'siteConfig': {
