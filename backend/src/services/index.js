@@ -22,6 +22,8 @@ import { runnerLogs } from './runner-logs/runner-logs.js'
 
 import { codeRuns } from './code-runs/code-runs.js'
 
+import { macros } from './macros/macros.js'
+
 import { accountEvent } from './account-event/account-event.js'
 
 import { acceptAgreement } from './agreements/accept/accept.js'
@@ -76,6 +78,8 @@ export const services = (app) => {
   app.configure(runnerLogs)
 
   app.configure(codeRuns)
+
+  app.configure(macros)
 
   app.configure(accountEvent)
 

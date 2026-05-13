@@ -7,7 +7,26 @@ SPDX-License-Identifier: AGPL-3.0-or-later
 <template>
   <v-card flat class="run-script-panel">
     <v-card-title class="text-center">Run Script</v-card-title>
-    <v-card-item>
+    <v-progress-linear
+      :active="isCreatePending"
+      indeterminate
+      absolute
+      bottom
+    ></v-progress-linear>
+    <v-card-text>
+      <v-autocomplete
+        v-model="loadedMacroId"
+        :items="macros"
+        item-title="name"
+        item-value="_id"
+        label="Load a saved macro (optional)"
+        variant="outlined"
+        density="comfortable"
+        clearable
+        hide-details
+        class="mb-3"
+        @update:model-value="onLoadMacro"
+      />
       <v-textarea
         v-model="code"
         label="Python script"
@@ -26,6 +45,14 @@ SPDX-License-Identifier: AGPL-3.0-or-later
         >
           Run
         </v-btn>
+        <v-btn
+          variant="outlined"
+          class="ml-2"
+          :disabled="!code.trim() || isRunning"
+          @click="openSaveDialog"
+        >
+          Save as Macro
+        </v-btn>
         <v-spacer />
         <span v-if="currentRun" class="text-caption">
           <v-chip :color="statusColor" size="small">{{ currentRun.status }}</v-chip>
@@ -34,29 +61,40 @@ SPDX-License-Identifier: AGPL-3.0-or-later
           </span>
         </span>
       </div>
+
       <v-divider class="my-4" v-if="currentRun" />
       <div v-if="currentRun?.stdout">
         <div class="text-caption font-weight-medium mb-1">stdout</div>
-        <pre class="output">{{ currentRun.stdout }}</pre>
+        <pre class="output bg-grey-darken-4 text-grey-lighten-3">{{ currentRun.stdout }}</pre>
       </div>
       <div v-if="currentRun?.stderr">
         <div class="text-caption font-weight-medium text-error mb-1 mt-2">stderr</div>
-        <pre class="output">{{ currentRun.stderr }}</pre>
+        <pre class="output bg-grey-darken-4 text-grey-lighten-3">{{ currentRun.stderr }}</pre>
       </div>
       <div v-if="currentRun?.error" class="text-error mt-2">
         {{ currentRun.error }}
       </div>
-    </v-card-item>
+    </v-card-text>
+    <v-snackbar
+      :timeout="2000"
+      v-model="showSnacker"
+    >
+      {{ snackerMsg }}
+    </v-snackbar>
+    <save-macro-dialog ref="saveMacroDialog" :code="code" />
   </v-card>
 </template>
 
 <script>
 import { models } from '@feathersjs/vuex';
+import { mapGetters, mapState } from 'vuex';
+import SaveMacroDialog from '@/components/SaveMacroDialog.vue';
 
-const { CodeRun } = models.api;
+const { CodeRun, Macro } = models.api;
 
 export default {
   name: 'RunScriptPanel',
+  components: { SaveMacroDialog },
   props: {
     model: {
       type: Object,
@@ -66,15 +104,27 @@ export default {
   data: () => ({
     code: '',
     runId: null,
-    isCreating: false,
+    loadedMacroId: null,
+    snackerMsg: '',
+    showSnacker: false,
   }),
+  async created() {
+    await Macro.find({ query: { $sort: { name: 1 } } });
+  },
   computed: {
-    // Reactively re-renders when feathers-vuex updates the store on `patched`
+    ...mapGetters('app', ['currentOrganization']),
+    ...mapState('code-runs', ['isCreatePending']),
+    macros() {
+      const all = Macro.findInStore({ query: { $sort: { name: 1 } } }).data || [];
+      const orgId = this.currentOrganization?._id?.toString();
+      if (!orgId) return all;
+      return all.filter(m => m.isGlobal || m.organizationId?.toString() === orgId);
+    },
     currentRun() {
       return this.runId ? CodeRun.getFromStore(this.runId) : null;
     },
     isRunning() {
-      if (this.isCreating) return true;
+      if (this.isCreatePending) return true;
       if (!this.currentRun) return false;
       return ['queued', 'running'].includes(this.currentRun.status);
     },
@@ -92,20 +142,29 @@ export default {
       const s = Math.round((ms % 60_000) / 1000);
       return `${m}m ${s}s`;
     },
+    onLoadMacro(macroId) {
+      if (!macroId) return;
+      const m = Macro.getFromStore(macroId);
+      if (m) this.code = m.code;
+    },
     async runScript() {
       if (!this.model || !this.code.trim()) return;
-      this.isCreating = true;
       try {
-        const run = await CodeRun.create({
+        const payload = {
           modelId: this.model._id,
           code: this.code,
-        });
+        };
+        if (this.loadedMacroId) payload.macroId = this.loadedMacroId;
+        const run = await CodeRun.create(payload);
         this.runId = run._id;
-      } catch (err) {
-        console.error('failed to start run', err);
-      } finally {
-        this.isCreating = false;
+      } catch (e) {
+        console.log(e.message);
+        this.snackerMsg = e.message;
+        this.showSnacker = true;
       }
+    },
+    openSaveDialog() {
+      this.$refs.saveMacroDialog.openDialog();
     },
   },
 }
@@ -116,8 +175,6 @@ export default {
   text-align: left;
 }
 .output {
-  background: #1e1e1e;
-  color: #d4d4d4;
   padding: 8px;
   border-radius: 4px;
   font-family: monospace;

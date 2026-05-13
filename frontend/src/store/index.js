@@ -24,6 +24,7 @@ import notifications from "@/store/services/notifications";
 import publisher from "@/store/services/publisher";
 import siteConfig from "@/store/services/site-config";
 import codeRuns from "@/store/services/code-runs";
+import macros from "@/store/services/macros";
 
 const store =  new Vuex.Store({
   state: {},
@@ -53,6 +54,7 @@ const store =  new Vuex.Store({
     publisher,
     siteConfig,
     codeRuns,
+    macros,
   ]
 })
 

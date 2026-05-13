@@ -24,7 +24,7 @@ import {
 } from './code-runs.schema.js'
 import { CodeRunsService, getOptions } from './code-runs.class.js'
 import { codeRunsPath, codeRunsMethods } from './code-runs.shared.js'
-import { userBelongingCodeRuns, doesUserHaveModelWriteRights } from './helpers.js'
+import { userBelongingCodeRuns, doesUserHaveModelWriteRights, verifyMacroReadable } from './helpers.js'
 
 export * from './code-runs.class.js'
 export * from './code-runs.schema.js'
@@ -70,6 +70,7 @@ export const codeRuns = (app) => {
       create: [
         schemaHooks.validateData(codeRunsDataValidator),
         doesUserHaveModelWriteRights,
+        verifyMacroReadable,
         schemaHooks.resolveData(codeRunsDataResolver)
       ],
       patch: [

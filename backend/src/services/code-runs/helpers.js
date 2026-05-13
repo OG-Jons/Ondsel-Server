@@ -17,7 +17,7 @@ export const userBelongingCodeRuns = async context => {
 
 export const doesUserHaveModelWriteRights = async context => {
   // used 'before' a 'create'; running a script is a write-equivalent action,
-  // so require workspace.haveWriteAccess (matches canUserAccessModelPatchMethod).
+  // so require workspace.haveWriteAccess.
   const { file, uniqueFileName } = await context.app.service('models').get(
     context.data.modelId,
     {
@@ -35,5 +35,15 @@ export const doesUserHaveModelWriteRights = async context => {
     context.params._modelFileName = uniqueFileName;
     return context;
   }
-  throw new BadRequest({ type: 'PermissionError', msg: 'You dont have write access to this model'});
+  throw new BadRequest('You dont have write access to this model', { type: 'PermissionError' });
+}
+
+
+export const verifyMacroReadable = async context => {
+  // used 'before' a 'create'; if macroId is provided, confirm the caller can
+  // see that macro (macros.get throws NotFound otherwise)
+  const macroId = context.data?.macroId;
+  if (!macroId) return context;
+  await context.app.service('macros').get(macroId, { user: context.params.user });
+  return context;
 }

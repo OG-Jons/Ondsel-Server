@@ -17,7 +17,7 @@ export const codeRunsSchema = Type.Object(
     _id: ObjectIdSchema(),
     userId: ObjectIdSchema(),
     modelId: ObjectIdSchema(),
-    snippetId: Type.Optional(ObjectIdSchema()),
+    macroId: Type.Optional(ObjectIdSchema()),
     code: Type.String({ maxLength: MAX_CODE_BYTES }),
     status: StringEnum(['queued', 'running', 'success', 'error']),
     exitCode: Type.Optional(Type.Integer()),
@@ -38,7 +38,7 @@ export const codeRunsExternalResolver = resolve({})
 
 // Schema for creating new entries
 export const codeRunsDataSchema = Type.Pick(codeRunsSchema, [
-  'modelId', 'code', 'snippetId'
+  'modelId', 'code', 'macroId'
 ], {
   $id: 'CodeRunsData'
 })
