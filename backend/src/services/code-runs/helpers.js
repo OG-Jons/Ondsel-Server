@@ -39,11 +39,13 @@ export const doesUserHaveModelWriteRights = async context => {
 }
 
 
-export const verifyMacroReadable = async context => {
-  // used 'before' a 'create'; if macroId is provided, confirm the caller can
-  // see that macro (macros.get throws NotFound otherwise)
+export const resolveMacro = async context => {
+  // used 'before' a 'create'; if macroId is provided, confirms the caller can
+  // read it (macros.get throws NotFound otherwise) and snapshots the name so
+  // history remains accurate if the macro is later renamed or deleted
   const macroId = context.data?.macroId;
   if (!macroId) return context;
-  await context.app.service('macros').get(macroId, { user: context.params.user });
+  const macro = await context.app.service('macros').get(macroId, { user: context.params.user });
+  context.data.macroName = macro.name;
   return context;
 }

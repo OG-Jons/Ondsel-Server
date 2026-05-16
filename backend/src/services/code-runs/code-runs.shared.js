@@ -4,7 +4,7 @@
 
 export const codeRunsPath = 'code-runs'
 
-export const codeRunsMethods = ['get', 'create', 'patch']
+export const codeRunsMethods = ['find', 'get', 'create', 'patch']
 
 export const codeRunsClient = (client) => {
   const connection = client.get('connection')

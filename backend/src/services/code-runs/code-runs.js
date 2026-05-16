@@ -24,7 +24,7 @@ import {
 } from './code-runs.schema.js'
 import { CodeRunsService, getOptions } from './code-runs.class.js'
 import { codeRunsPath, codeRunsMethods } from './code-runs.shared.js'
-import { userBelongingCodeRuns, doesUserHaveModelWriteRights, verifyMacroReadable } from './helpers.js'
+import { userBelongingCodeRuns, doesUserHaveModelWriteRights, resolveMacro } from './helpers.js'
 
 export * from './code-runs.class.js'
 export * from './code-runs.schema.js'
@@ -70,7 +70,7 @@ export const codeRuns = (app) => {
       create: [
         schemaHooks.validateData(codeRunsDataValidator),
         doesUserHaveModelWriteRights,
-        verifyMacroReadable,
+        resolveMacro,
         schemaHooks.resolveData(codeRunsDataResolver)
       ],
       patch: [
@@ -105,7 +105,7 @@ const dispatchToWorker = async (context) => {
       fileName,
       command: RUN_CODE_SNIPPET_CMD,
       accessToken,
-      script: run.code,
+      script: run.resolvedCode,
     },
   }).catch(async (err) => {
     // recover stuck 'queued' rows when FC-Worker is unreachable; raw error

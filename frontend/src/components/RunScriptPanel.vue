@@ -6,14 +6,14 @@ SPDX-License-Identifier: AGPL-3.0-or-later
 
 <template>
   <v-card flat class="run-script-panel">
-    <v-card-title class="text-center">Run Script</v-card-title>
+    <v-card-title class="text-center flex-shrink-0">Run Script</v-card-title>
     <v-progress-linear
       :active="isCreatePending"
       indeterminate
       absolute
       bottom
     ></v-progress-linear>
-    <v-card-text>
+    <v-card-text class="panel-scroll">
       <v-autocomplete
         v-model="loadedMacroId"
         :items="macros"
@@ -93,12 +93,18 @@ SPDX-License-Identifier: AGPL-3.0-or-later
           Save as Macro
         </v-btn>
         <v-spacer />
-        <span v-if="currentRun" class="text-caption">
+        <span v-if="currentRun" class="text-caption mr-2">
           <v-chip :color="statusColor" size="small">{{ currentRun.status }}</v-chip>
           <span v-if="currentRun.exitCode !== undefined" class="ml-2">
             exit {{ currentRun.exitCode }} · {{ formatDuration(currentRun.durationMs) }}
           </span>
         </span>
+        <v-btn
+          variant="text"
+          size="small"
+          :append-icon="historyOpen ? 'mdi-chevron-down' : 'mdi-chevron-up'"
+          @click="historyOpen = !historyOpen"
+        >History</v-btn>
       </div>
 
       <v-divider class="my-4" v-if="currentRun" />
@@ -114,10 +120,17 @@ SPDX-License-Identifier: AGPL-3.0-or-later
         {{ currentRun.error }}
       </div>
     </v-card-text>
-    <v-snackbar
-      :timeout="2000"
-      v-model="showSnacker"
-    >
+
+    <run-history-panel
+      v-if="historyOpen"
+      :model="model"
+      :is-running="isRunning"
+      @close="historyOpen = false"
+      @load="loadFromHistory"
+      @rerun="rerunFromHistory"
+    />
+
+    <v-snackbar :timeout="2000" v-model="showSnacker">
       {{ snackerMsg }}
     </v-snackbar>
     <save-macro-dialog ref="saveMacroDialog" :code="code" />
@@ -129,13 +142,14 @@ import { models } from '@feathersjs/vuex';
 import { mapGetters, mapState } from 'vuex';
 import SaveMacroDialog from '@/components/SaveMacroDialog.vue';
 import CodeEditor from '@/components/CodeEditor.vue';
+import RunHistoryPanel from '@/components/RunHistoryPanel.vue';
 import { resolvePlaceholders } from '@/codemirror/resolve';
 
 const { CodeRun, Macro } = models.api;
 
 export default {
   name: 'RunScriptPanel',
-  components: { SaveMacroDialog, CodeEditor },
+  components: { SaveMacroDialog, CodeEditor, RunHistoryPanel },
   props: {
     model: {
       type: Object,
@@ -152,6 +166,7 @@ export default {
     loadedMacroId: null,
     snackerMsg: '',
     showSnacker: false,
+    historyOpen: false,
   }),
   async created() {
     await Macro.find({ query: { $sort: { name: 1 } } });
@@ -215,7 +230,8 @@ export default {
         const resolved = resolvePlaceholders(this.code, { viewer: this.viewer });
         const payload = {
           modelId: this.model._id,
-          code: resolved,
+          code: this.code,
+          resolvedCode: resolved,
         };
         if (this.loadedMacroId) payload.macroId = this.loadedMacroId;
         const run = await CodeRun.create(payload);
@@ -237,6 +253,14 @@ export default {
       if (this.isRunning) return;
       this.$refs.editor?.insertPlaceholder('selectedObject', index);
     },
+    loadFromHistory(run) {
+      this.code = run.code;
+    },
+    async rerunFromHistory(run) {
+      this.code = run.code;
+      await this.$nextTick();
+      this.runScript();
+    },
   },
 }
 </script>
@@ -244,6 +268,15 @@ export default {
 <style scoped>
 .run-script-panel {
   text-align: left;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.panel-scroll {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
 }
 .output {
   padding: 8px;

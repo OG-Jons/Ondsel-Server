@@ -18,7 +18,9 @@ export const codeRunsSchema = Type.Object(
     userId: ObjectIdSchema(),
     modelId: ObjectIdSchema(),
     macroId: Type.Optional(ObjectIdSchema()),
+    macroName: Type.Optional(Type.String({ maxLength: 255 })),
     code: Type.String({ maxLength: MAX_CODE_BYTES }),
+    resolvedCode: Type.String({ maxLength: MAX_CODE_BYTES }),
     status: StringEnum(['queued', 'running', 'success', 'error']),
     exitCode: Type.Optional(Type.Integer()),
     stdout: Type.Optional(Type.String({ maxLength: MAX_OUTPUT_BYTES })),
@@ -38,7 +40,7 @@ export const codeRunsExternalResolver = resolve({})
 
 // Schema for creating new entries
 export const codeRunsDataSchema = Type.Pick(codeRunsSchema, [
-  'modelId', 'code', 'macroId'
+  'modelId', 'code', 'resolvedCode', 'macroId'
 ], {
   $id: 'CodeRunsData'
 })
@@ -60,7 +62,7 @@ export const codeRunsPatchValidator = getValidator(codeRunsPatchSchema, dataVali
 export const codeRunsPatchResolver = resolve({})
 
 // Schema for allowed query properties
-export const codeRunsQueryProperties = Type.Pick(codeRunsSchema, ['userId'])
+export const codeRunsQueryProperties = Type.Pick(codeRunsSchema, ['userId', 'modelId', 'createdAt'])
 export const codeRunsQuerySchema = Type.Intersect(
   [
     querySyntax(codeRunsQueryProperties),
