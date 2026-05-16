@@ -27,14 +27,53 @@ SPDX-License-Identifier: AGPL-3.0-or-later
         class="mb-3"
         @update:model-value="onLoadMacro"
       />
-      <v-textarea
+      <div v-if="objectLabels.length || selectedObjects.length" class="mb-2" :class="{ 'opacity-50': isRunning }">
+        <div class="text-caption text-medium-emphasis mb-1 d-flex align-center ga-1">
+          Insert object reference:
+          <v-tooltip location="right" max-width="320">
+            <template #activator="{ props }">
+              <v-icon v-bind="props" size="14" color="medium-emphasis">mdi-information-outline</v-icon>
+            </template>
+            <div>
+              <div class="font-weight-medium mb-1">Object placeholders</div>
+              <div><code>&lt;objLabel:NAME&gt;</code> — object by label</div>
+              <div><code>&lt;selectedObject:N&gt;</code> — Nth selected object (1-based)</div>
+              <div class="mt-1 text-caption">Placeholders are resolved to Python expressions before the script runs.</div>
+            </div>
+          </v-tooltip>
+        </div>
+        <div class="d-flex flex-wrap ga-1">
+          <v-chip
+            v-for="label of objectLabels"
+            :key="label"
+            size="small"
+            variant="outlined"
+            color="success"
+            prepend-icon="mdi-cube-outline"
+            :title="`Insert <objLabel:${label}>`"
+            @click="insertObjLabel(label)"
+          >{{ label }}</v-chip>
+          <v-chip
+            v-for="(label, i) of selectedObjects"
+            :key="`sel-${i}`"
+            size="small"
+            variant="outlined"
+            color="primary"
+            prepend-icon="mdi-cursor-default-click-outline"
+            :title="`Insert <selectedObject:${i + 1}> (${label})`"
+            @click="insertSelectedObject(i + 1)"
+          >{{ label }}</v-chip>
+        </div>
+      </div>
+      <code-editor
+        ref="editor"
         v-model="code"
-        label="Python script"
-        variant="outlined"
-        rows="12"
         :disabled="isRunning"
         placeholder="print('hello')&#10;print('doc:', doc)"
-        class="script-input"
+        min-height="18em"
+        class="mb-2"
+        :placeholder-labels="objectLabels"
+        :placeholder-viewer="viewer"
       />
       <div class="d-flex align-center">
         <v-btn
@@ -89,14 +128,20 @@ SPDX-License-Identifier: AGPL-3.0-or-later
 import { models } from '@feathersjs/vuex';
 import { mapGetters, mapState } from 'vuex';
 import SaveMacroDialog from '@/components/SaveMacroDialog.vue';
+import CodeEditor from '@/components/CodeEditor.vue';
+import { resolvePlaceholders } from '@/codemirror/resolve';
 
 const { CodeRun, Macro } = models.api;
 
 export default {
   name: 'RunScriptPanel',
-  components: { SaveMacroDialog },
+  components: { SaveMacroDialog, CodeEditor },
   props: {
     model: {
+      type: Object,
+      required: false,
+    },
+    viewer: {
       type: Object,
       required: false,
     },
@@ -132,6 +177,23 @@ export default {
       const map = { queued: 'grey', running: 'blue', success: 'success', error: 'error' };
       return map[this.currentRun?.status] || 'grey';
     },
+    objectLabels() {
+      if (!this.viewer?.model) return [];
+      return this.viewer.model.GetObjects().map(o => o.GetLabel());
+    },
+    selectedObjects() {
+      return this.viewer?.selectedObjs?.map(o => o?.GetLabel?.()).filter(Boolean) ?? [];
+    },
+    selectionKey() {
+      return this.selectedObjects.join(',');
+    },
+  },
+  watch: {
+    // viewer.selectedObjs is mutated in-place, so we derive a string key to
+    // detect changes and push fresh context into the editor for chip re-render
+    selectionKey() {
+      this.$refs.editor?.reconfigureContext();
+    },
   },
   methods: {
     formatDuration(ms) {
@@ -150,9 +212,10 @@ export default {
     async runScript() {
       if (!this.model || !this.code.trim()) return;
       try {
+        const resolved = resolvePlaceholders(this.code, { viewer: this.viewer });
         const payload = {
           modelId: this.model._id,
-          code: this.code,
+          code: resolved,
         };
         if (this.loadedMacroId) payload.macroId = this.loadedMacroId;
         const run = await CodeRun.create(payload);
@@ -165,6 +228,14 @@ export default {
     },
     openSaveDialog() {
       this.$refs.saveMacroDialog.openDialog();
+    },
+    insertObjLabel(label) {
+      if (this.isRunning) return;
+      this.$refs.editor?.insertPlaceholder('objLabel', label);
+    },
+    insertSelectedObject(index) {
+      if (this.isRunning) return;
+      this.$refs.editor?.insertPlaceholder('selectedObject', index);
     },
   },
 }
@@ -183,9 +254,5 @@ export default {
   max-height: 320px;
   overflow-y: auto;
   margin: 0;
-}
-.script-input :deep(textarea) {
-  font-family: monospace;
-  font-size: 13px;
 }
 </style>

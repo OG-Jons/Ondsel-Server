@@ -35,14 +35,27 @@ SPDX-License-Identifier: AGPL-3.0-or-later
             rows="2"
             :disabled="isCreatePending || isPatchPending"
           ></v-textarea>
-          <v-textarea
+          <div class="text-caption text-medium-emphasis mb-1 d-flex align-center ga-1">
+            Python script
+            <v-tooltip location="right" max-width="320">
+              <template #activator="{ props }">
+                <v-icon v-bind="props" size="14" color="medium-emphasis">mdi-information-outline</v-icon>
+              </template>
+              <div>
+                <div class="font-weight-medium mb-1">Object placeholders</div>
+                <div><code>&lt;objLabel:NAME&gt;</code> — object by label</div>
+                <div><code>&lt;selectedObject:N&gt;</code> — Nth selected object (1-based)</div>
+                <div class="mt-1 text-caption">Placeholders are resolved to Python expressions before the script runs.</div>
+              </div>
+            </v-tooltip>
+          </div>
+          <code-editor
             v-model="formCode"
-            label="Python script"
-            rows="12"
-            placeholder="print('hello')"
-            class="code-input"
             :disabled="isCreatePending || isPatchPending"
-          ></v-textarea>
+            placeholder="print('hello')&#10;print('doc:', doc)"
+            min-height="18em"
+            class="mb-3"
+          />
           <div v-if="!editingId" class="text-caption text-medium-emphasis">
             <template v-if="currentOrganization?.type === 'Personal'">
               Will be saved to <span class="font-weight-medium">yourself</span>
@@ -82,11 +95,13 @@ SPDX-License-Identifier: AGPL-3.0-or-later
 <script>
 import { models } from '@feathersjs/vuex';
 import { mapGetters, mapState } from 'vuex';
+import CodeEditor from '@/components/CodeEditor.vue';
 
 const { Macro } = models.api;
 
 export default {
   name: 'EditMacroDialog',
+  components: { CodeEditor },
   data: () => ({
     dialog: false,
     editingId: null,
@@ -159,8 +174,4 @@ export default {
 </script>
 
 <style scoped>
-.code-input :deep(textarea) {
-  font-family: monospace;
-  font-size: 13px;
-}
 </style>
