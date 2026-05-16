@@ -109,14 +109,14 @@ export default {
         return;
       }
       try {
-        await Macro.create({
+        const macro = await Macro.create({
           name: this.name,
           description: this.description || undefined,
           code: this.code,
           organizationId: this.currentOrganization._id,
         });
         this.dialog = false;
-        this.$emit('saved');
+        this.$emit('saved', macro);
       } catch (e) {
         console.log(e.message);
         this.snackerMsg = e.message;

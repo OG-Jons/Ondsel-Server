@@ -16,7 +16,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
     <v-card-text class="panel-scroll">
       <v-autocomplete
         v-model="loadedMacroId"
-        :items="macros"
+        :items="macroItems"
         item-title="name"
         item-value="_id"
         label="Load a saved macro (optional)"
@@ -24,9 +24,36 @@ SPDX-License-Identifier: AGPL-3.0-or-later
         density="comfortable"
         clearable
         hide-details
-        class="mb-3"
+        :class="isMacroModified ? 'mb-1' : 'mb-3'"
         @update:model-value="onLoadMacro"
-      />
+      >
+        <template #item="{ item, props: itemProps }">
+          <v-list-subheader v-if="item.raw.header" :key="item.raw.header">
+            {{ item.raw.header }}
+          </v-list-subheader>
+          <v-list-item v-else v-bind="itemProps" :title="undefined">
+            <template #prepend>
+              <v-icon size="16" class="mr-2" :color="item.raw.isGlobal ? 'orange-darken-2' : 'primary'">
+                {{ item.raw.isGlobal ? 'mdi-earth' : 'mdi-account-outline' }}
+              </v-icon>
+            </template>
+            <v-list-item-title class="text-body-2">{{ item.raw.name }}</v-list-item-title>
+            <v-list-item-subtitle v-if="item.raw.description" class="text-caption">{{ item.raw.description }}</v-list-item-subtitle>
+          </v-list-item>
+        </template>
+        <template #selection="{ item }">
+          <v-icon size="14" class="mr-1" :color="item.raw.isGlobal ? 'orange-darken-2' : 'primary'">
+            {{ item.raw.isGlobal ? 'mdi-earth' : 'mdi-account-outline' }}
+          </v-icon>
+          {{ item.raw.name }}
+          <v-chip v-if="isMacroModified" size="x-small" color="warning" class="ml-2">modified</v-chip>
+        </template>
+      </v-autocomplete>
+      <div v-if="isMacroModified" class="text-caption mb-2 d-flex align-center ga-1">
+        <v-icon size="12" color="warning">mdi-pencil-outline</v-icon>
+        <span class="text-medium-emphasis">Script differs from <strong>{{ loadedMacro.name }}</strong></span>
+        <v-btn variant="text" size="x-small" color="primary" class="ml-1 px-1" style="min-width:0" @click="revertToMacro">↩ Revert</v-btn>
+      </div>
       <div v-if="objectLabels.length || selectedObjects.length" class="mb-2" :class="{ 'opacity-50': isRunning }">
         <div class="text-caption text-medium-emphasis mb-1 d-flex align-center ga-1">
           Insert object reference:
@@ -130,10 +157,24 @@ SPDX-License-Identifier: AGPL-3.0-or-later
       @rerun="rerunFromHistory"
     />
 
+    <v-dialog v-model="showModifiedDialog" max-width="400" persistent>
+      <v-card>
+        <v-card-title class="text-body-1 font-weight-medium pt-4 px-4">Run modified script?</v-card-title>
+        <v-card-text class="text-body-2 pb-2">
+          The script differs from <strong>{{ loadedMacro?.name }}</strong>. This run will not be linked to the macro.
+        </v-card-text>
+        <v-card-actions class="justify-end pb-3 px-4 ga-2">
+          <v-btn variant="text" @click="showModifiedDialog = false">Cancel</v-btn>
+          <v-btn variant="text" @click="revertAndRun">Revert &amp; Run</v-btn>
+          <v-btn color="primary" variant="elevated" @click="runAnyway">Run anyway</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
     <v-snackbar :timeout="2000" v-model="showSnacker">
       {{ snackerMsg }}
     </v-snackbar>
-    <save-macro-dialog ref="saveMacroDialog" :code="code" />
+    <save-macro-dialog ref="saveMacroDialog" :code="code" @saved="onMacroSaved" />
   </v-card>
 </template>
 
@@ -167,6 +208,7 @@ export default {
     snackerMsg: '',
     showSnacker: false,
     historyOpen: false,
+    showModifiedDialog: false,
   }),
   async created() {
     await Macro.find({ query: { $sort: { name: 1 } } });
@@ -179,6 +221,29 @@ export default {
       const orgId = this.currentOrganization?._id?.toString();
       if (!orgId) return all;
       return all.filter(m => m.isGlobal || m.organizationId?.toString() === orgId);
+    },
+    macroItems() {
+      const mine = this.macros.filter(m => !m.isGlobal);
+      const globalMacros = this.macros.filter(m => m.isGlobal);
+      const orgType = this.currentOrganization?.type;
+      const orgName = this.currentOrganization?.name;
+      const mineHeader = orgType === 'Personal' ? 'My Macros' : `${orgName} Macros`;
+      const items = [];
+      if (mine.length) {
+        items.push({ header: mineHeader, _id: '__header_mine' });
+        items.push(...mine);
+      }
+      if (globalMacros.length) {
+        items.push({ header: 'Global Macros', _id: '__header_global' });
+        items.push(...globalMacros);
+      }
+      return items;
+    },
+    loadedMacro() {
+      return this.loadedMacroId ? Macro.getFromStore(this.loadedMacroId) : null;
+    },
+    isMacroModified() {
+      return !!(this.loadedMacro && this.code.trim() !== this.loadedMacro.code.trim());
     },
     currentRun() {
       return this.runId ? CodeRun.getFromStore(this.runId) : null;
@@ -224,8 +289,27 @@ export default {
       const m = Macro.getFromStore(macroId);
       if (m) this.code = m.code;
     },
-    async runScript() {
+    revertToMacro() {
+      if (this.loadedMacro) this.code = this.loadedMacro.code;
+    },
+    revertAndRun() {
+      this.showModifiedDialog = false;
+      this.revertToMacro();
+      this.doRun();
+    },
+    runAnyway() {
+      this.showModifiedDialog = false;
+      this.doRun(true);
+    },
+    runScript() {
       if (!this.model || !this.code.trim()) return;
+      if (this.isMacroModified) {
+        this.showModifiedDialog = true;
+        return;
+      }
+      this.doRun();
+    },
+    async doRun(skipMacroLink = false) {
       try {
         const resolved = resolvePlaceholders(this.code, { viewer: this.viewer });
         const payload = {
@@ -233,7 +317,7 @@ export default {
           code: this.code,
           resolvedCode: resolved,
         };
-        if (this.loadedMacroId) payload.macroId = this.loadedMacroId;
+        if (this.loadedMacroId && !skipMacroLink) payload.macroId = this.loadedMacroId;
         const run = await CodeRun.create(payload);
         this.runId = run._id;
       } catch (e) {
@@ -245,6 +329,9 @@ export default {
     openSaveDialog() {
       this.$refs.saveMacroDialog.openDialog();
     },
+    onMacroSaved(macro) {
+      this.loadedMacroId = macro._id;
+    },
     insertObjLabel(label) {
       if (this.isRunning) return;
       this.$refs.editor?.insertPlaceholder('objLabel', label);
@@ -253,13 +340,21 @@ export default {
       if (this.isRunning) return;
       this.$refs.editor?.insertPlaceholder('selectedObject', index);
     },
+    macroIdForRun(run) {
+      if (!run.macroId) return null;
+      const macro = Macro.getFromStore(run.macroId);
+      // only link if macro still exists and its code matches what was run
+      return (macro && macro.code.trim() === run.code.trim()) ? run.macroId : null;
+    },
     loadFromHistory(run) {
       this.code = run.code;
+      this.loadedMacroId = this.macroIdForRun(run);
     },
     async rerunFromHistory(run) {
       this.code = run.code;
+      this.loadedMacroId = this.macroIdForRun(run);
       await this.$nextTick();
-      this.runScript();
+      this.doRun();
     },
   },
 }
