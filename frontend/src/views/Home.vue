@@ -55,13 +55,14 @@ SPDX-License-Identifier: AGPL-3.0-or-later
         location="start"
       >Click new thumbnail</v-tooltip>
     </v-btn>
-    <v-btn icon flat :disabled="model && !model.haveWriteAccess" @click="runScriptDrawerClicked">
-      <v-icon>mdi-code-tags</v-icon>
-      <v-tooltip
-        activator="parent"
-        location="start"
-      >Run script</v-tooltip>
-    </v-btn>
+    <span>
+      <v-btn icon flat :disabled="(model && !model.haveWriteAccess) || !organization?.constraint?.canRunScripts" @click="runScriptDrawerClicked">
+        <v-icon>mdi-code-tags</v-icon>
+      </v-btn>
+      <v-tooltip activator="parent" location="start">
+        {{ !organization?.constraint?.canRunScripts ? 'Upgrade your plan to run scripts' : 'Run script' }}
+      </v-tooltip>
+    </span>
     <!-- <v-btn v-if="model && siteConfig?.desktopApp?.enabledOpenInDesktopApp" icon flat @click="openModelInDesktopAppDialog">
       <v-icon>mdi-open-in-app</v-icon>
       <v-tooltip
