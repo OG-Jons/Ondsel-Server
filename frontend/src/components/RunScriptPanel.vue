@@ -151,6 +151,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
     <run-history-panel
       v-if="historyOpen"
       :model="model"
+      :shared-model-id="sharedModelId"
       :is-running="isRunning"
       @close="historyOpen = false"
       @load="loadFromHistory"
@@ -199,6 +200,11 @@ export default {
     viewer: {
       type: Object,
       required: false,
+    },
+    sharedModelId: {
+      type: String,
+      required: false,
+      default: null,
     },
   },
   data: () => ({
@@ -317,6 +323,7 @@ export default {
           code: this.code,
           resolvedCode: resolved,
         };
+        if (this.sharedModelId) payload.sharedModelId = this.sharedModelId;
         if (this.loadedMacroId && !skipMacroLink) payload.macroId = this.loadedMacroId;
         const run = await CodeRun.create(payload);
         this.runId = run._id;

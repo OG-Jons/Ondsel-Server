@@ -81,6 +81,11 @@ export default {
       type: Object,
       required: false,
     },
+    sharedModelId: {
+      type: String,
+      required: false,
+      default: null,
+    },
     isRunning: {
       type: Boolean,
       default: false,
@@ -94,17 +99,22 @@ export default {
     expandedTab: {},
   }),
   computed: {
+    historyQuery() {
+      if (this.sharedModelId) {
+        return { sharedModelId: this.sharedModelId, ...HISTORY_QUERY };
+      }
+      const modelId = this.model?._id;
+      return modelId ? { modelId, ...HISTORY_QUERY } : null;
+    },
     runs() {
-      if (!this.model) return [];
-      return CodeRun.findInStore({
-        query: { modelId: this.model._id, ...HISTORY_QUERY },
-      }).data || [];
+      if (!this.historyQuery) return [];
+      return CodeRun.findInStore({ query: this.historyQuery }).data || [];
     },
   },
   async created() {
-    if (!this.model) return;
+    if (!this.historyQuery) return;
     this.loading = true;
-    await CodeRun.find({ query: { modelId: this.model._id, ...HISTORY_QUERY } });
+    await CodeRun.find({ query: this.historyQuery });
     this.loading = false;
   },
   methods: {

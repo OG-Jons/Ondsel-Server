@@ -15,9 +15,30 @@ export const userBelongingCodeRuns = async context => {
 }
 
 
-export const doesUserHaveModelWriteRights = async context => {
-  // used 'before' a 'create'; running a script is a write-equivalent action,
-  // so require workspace.haveWriteAccess.
+export const canUserAccessModelForRun = async context => {
+  // used 'before' a 'create'; verifies the caller has run access (share link flag or
+  // workspace write), then stashes $modelFileName and $organizationId on context.params
+  if (context.data.sharedModelId) {
+    const sharedModel = await context.app.service('shared-models').get(
+      context.data.sharedModelId
+    );
+    if (!sharedModel.canRunScripts) {
+      throw new BadRequest('This share link does not allow running scripts', { type: 'PermissionError' });
+    }
+    const { uniqueFileName, file } = await context.app.service('models').get(
+      sharedModel.cloneModelId,
+      { query: { $select: ['uniqueFileName', 'file'] } }
+    );
+    const { organizationId } = await context.app.service('workspaces').get(
+      file.workspace._id,
+      { query: { $select: ['organizationId'] } }
+    );
+    context.data.modelId = sharedModel.cloneModelId;
+    context.params.$modelFileName = uniqueFileName;
+    context.params.$organizationId = organizationId;
+    return context;
+  }
+
   const { file, uniqueFileName } = await context.app.service('models').get(
     context.data.modelId,
     {
@@ -27,15 +48,14 @@ export const doesUserHaveModelWriteRights = async context => {
   );
   const workspace = await context.app.service('workspaces').get(
     file.workspace._id,
-    {
-      user: context.params.user,
-    }
+    { user: context.params.user }
   );
-  if (workspace.haveWriteAccess) {
-    context.params._modelFileName = uniqueFileName;
-    return context;
+  if (!workspace.haveWriteAccess) {
+    throw new BadRequest('You dont have write access to this model', { type: 'PermissionError' });
   }
-  throw new BadRequest('You dont have write access to this model', { type: 'PermissionError' });
+  context.params.$modelFileName = uniqueFileName;
+  context.params.$organizationId = workspace.organizationId;
+  return context;
 }
 
 

@@ -24,7 +24,7 @@ import {
 } from './code-runs.schema.js'
 import { CodeRunsService, getOptions } from './code-runs.class.js'
 import { codeRunsPath, codeRunsMethods } from './code-runs.shared.js'
-import { userBelongingCodeRuns, doesUserHaveModelWriteRights, resolveMacro } from './helpers.js'
+import { userBelongingCodeRuns, canUserAccessModelForRun, resolveMacro } from './helpers.js'
 import { canUserRunScripts } from '../hooks/permissions.js'
 
 export * from './code-runs.class.js'
@@ -70,8 +70,8 @@ export const codeRuns = (app) => {
       get: [userBelongingCodeRuns],
       create: [
         schemaHooks.validateData(codeRunsDataValidator),
+        canUserAccessModelForRun,
         canUserRunScripts,
-        doesUserHaveModelWriteRights,
         resolveMacro,
         schemaHooks.resolveData(codeRunsDataResolver)
       ],
@@ -94,7 +94,7 @@ export const codeRuns = (app) => {
 
 const dispatchToWorker = async (context) => {
   const run = context.result
-  const fileName = context.params._modelFileName
+  const fileName = context.params.$modelFileName
   const accessToken = context.params.authentication?.accessToken || context.params.accessToken
 
   axios({

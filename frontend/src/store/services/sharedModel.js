@@ -26,6 +26,7 @@ class SharedModel extends BaseModel {
       canViewModel: true,
       canViewModelAttributes: false,
       canUpdateModel: false,
+      canRunScripts: false,
       canExportFCStd: false,
       canExportSTEP: false,
       canExportSTL: false,
