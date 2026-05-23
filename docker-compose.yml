@@ -90,6 +90,8 @@ services:
       - REDIS_HOST=fc-worker-redis
       - REDIS_PORT=6379
       - BACKEND_URL=${BACKEND_URL:-http://localhost:3030}
+    # bubblewrap (RUN_CODE_SNIPPET sandbox) needs CAP_SYS_ADMIN + writable cgroup.
+    privileged: true
     network_mode: "service:backend"
     depends_on:
       - backend

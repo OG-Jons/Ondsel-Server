@@ -97,6 +97,8 @@ services:
     volumes:
       - ./FC-Worker/fc_worker:/app/fc_worker
       - ./FC-Worker/main.py:/app/main.py
+    # bubblewrap (RUN_CODE_SNIPPET sandbox) needs CAP_SYS_ADMIN + writable cgroup.
+    privileged: true
     network_mode: "service:backend"
     depends_on:
       - backend
