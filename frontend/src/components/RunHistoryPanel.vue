@@ -14,8 +14,8 @@ SPDX-License-Identifier: AGPL-3.0-or-later
       <span class="text-caption font-weight-medium">Run History</span>
       <v-progress-circular v-if="loading" size="14" width="2" indeterminate class="ml-2" />
       <v-spacer />
-      <v-btn icon size="x-small" variant="text" :title="height >= 580 ? 'Restore' : 'Maximize'" @click="toggleMaximize">
-        <v-icon size="16">{{ height >= 580 ? 'mdi-arrow-collapse-down' : 'mdi-arrow-expand-up' }}</v-icon>
+      <v-btn icon size="x-small" variant="text" :title="maximized ? 'Restore' : 'Maximize'" @click="toggleMaximize">
+        <v-icon size="16">{{ maximized ? 'mdi-arrow-collapse-down' : 'mdi-arrow-expand-up' }}</v-icon>
       </v-btn>
       <v-btn icon size="x-small" variant="text" title="Close history" @click="$emit('close')">
         <v-icon size="16">mdi-close</v-icon>
@@ -94,6 +94,7 @@ export default {
   emits: ['close', 'load', 'rerun'],
   data: () => ({
     height: 200,
+    maximized: false,
     loading: false,
     expandedRunId: null,
     expandedTab: {},
@@ -117,7 +118,50 @@ export default {
     await CodeRun.find({ query: this.historyQuery });
     this.loading = false;
   },
+  mounted() {
+    this.setInitialHeight();
+    window.addEventListener('resize', this.recalculateHeight);
+  },
+  beforeUnmount() {
+    window.removeEventListener('resize', this.recalculateHeight);
+  },
   methods: {
+    clampHeight(height, panelHeight = this.$el?.parentElement?.clientHeight || 0) {
+      if (!panelHeight) return Math.max(140, Math.round(height));
+      return Math.max(140, Math.min(panelHeight, Math.round(height)));
+    },
+    getTargetHeight(anchor) {
+      const panel = this.$el?.parentElement;
+      const panelHeight = panel?.clientHeight || 0;
+      const scrollPanel = panel?.querySelector('.panel-scroll');
+      const fallback = anchor === 'run' ? panelHeight * 0.6 : panelHeight;
+      if (!panelHeight || !scrollPanel) return this.clampHeight(fallback, panelHeight);
+
+      const targetEl = anchor === 'macro'
+        ? scrollPanel.querySelector('.macro-load-field')
+        : panel.querySelector('.run-actions-row');
+      if (!targetEl) return this.clampHeight(fallback, panelHeight);
+
+      let offsetTop = 0;
+      let node = targetEl;
+      while (node && node !== scrollPanel) {
+        offsetTop += node.offsetTop || 0;
+        node = node.offsetParent;
+      }
+      const targetBottomInScroll = offsetTop + targetEl.offsetHeight;
+      return this.clampHeight(panelHeight - targetBottomInScroll - 8, panelHeight);
+    },
+    setInitialHeight() {
+      this.height = this.getTargetHeight('run');
+      this.maximized = false;
+    },
+    recalculateHeight() {
+      if (this.maximized) {
+        this.height = this.getTargetHeight('macro');
+        return;
+      }
+      this.height = this.clampHeight(this.height);
+    },
     timeAgo(ts) {
       if (!ts) return '';
       const diff = Date.now() - ts;
@@ -135,15 +179,22 @@ export default {
       this.expandedRunId = this.expandedRunId === runId ? null : runId;
     },
     toggleMaximize() {
-      this.height = this.height >= 580 ? 200 : 580;
+      if (this.maximized) {
+        this.height = this.getTargetHeight('run');
+        this.maximized = false;
+        return;
+      }
+      this.height = this.getTargetHeight('macro');
+      this.maximized = true;
     },
     startResize(e) {
       const startY = e.clientY;
       const startHeight = this.height;
+      this.maximized = false;
       document.body.style.userSelect = 'none';
       const onMove = (ev) => {
         const delta = startY - ev.clientY;
-        this.height = Math.min(600, Math.max(100, startHeight + delta));
+        this.height = this.clampHeight(startHeight + delta);
       };
       const onUp = () => {
         document.body.style.userSelect = '';

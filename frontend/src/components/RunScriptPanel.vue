@@ -25,6 +25,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
         clearable
         hide-details
         :class="isMacroModified ? 'mb-1' : 'mb-3'"
+        class="macro-load-field"
         @update:model-value="onLoadMacro"
       >
         <template #item="{ item, props: itemProps }">
@@ -102,7 +103,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
         :placeholder-labels="objectLabels"
         :placeholder-viewer="viewer"
       />
-      <div class="d-flex align-center">
+      <div class="d-flex align-center run-actions-row">
         <v-btn
           color="primary"
           :loading="isRunning"
