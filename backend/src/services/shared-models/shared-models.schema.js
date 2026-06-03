@@ -45,6 +45,7 @@ export const sharedModelsSchema = Type.Object(
     canExportSTL: Type.Boolean({default: false}),
     canExportOBJ: Type.Boolean({default: false}),
     canDownloadDefaultModel: Type.Boolean({default: false}),
+    canRunScripts: Type.Boolean({default: false}),
     isActive: Type.Boolean({default: true}),
     isSystemGenerated: Type.Optional(Type.Boolean({default: false})),
     showInPublicGallery: Type.Optional(Type.Boolean({default: false})),  // deprecated
@@ -184,6 +185,7 @@ export const sharedModelsDataSchema = Type.Pick(sharedModelsSchema, [
   'canExportSTL',
   'canExportOBJ',
   'canDownloadDefaultModel',
+  'canRunScripts',
   'dummyModelId',
   'isSystemGenerated',
   'isThumbnailGenerated',
@@ -264,6 +266,12 @@ export const sharedModelsDataResolver = resolve({
       return _value;
     }
     return sharedModelsSchema.properties.canDownloadDefaultModel.default
+  },
+  canRunScripts: async (_value, _message, _context) => {
+    if (_value) {
+      return _value;
+    }
+    return sharedModelsSchema.properties.canRunScripts.default
   },
   isActive: async (_value, _message, context) => {
     if (_value) {

@@ -172,6 +172,13 @@ SPDX-License-Identifier: AGPL-3.0-or-later
             </v-row>
             <v-row>
               <v-col cols="4">
+                <v-checkbox v-model="item.canRunScripts" :disabled="!item.isActive" hide-details>
+                  <template v-slot:label>
+                    <div>Can run scripts</div>
+                  </template>
+                </v-checkbox>
+              </v-col>
+              <v-col cols="4">
                 <v-checkbox v-model="item.canDownloadDefaultModel" :disabled="!item.isActive" hide-details>
                   <template v-slot:label>
                     <div>Can download original model</div>
@@ -185,6 +192,8 @@ SPDX-License-Identifier: AGPL-3.0-or-later
                   </template>
                 </v-checkbox>
               </v-col>
+            </v-row>
+            <v-row>
               <v-col cols="4">
                 <v-checkbox v-model="item.canExportSTEP" :disabled="!item.isActive" hide-details>
                   <template v-slot:label>
@@ -192,8 +201,6 @@ SPDX-License-Identifier: AGPL-3.0-or-later
                   </template>
                 </v-checkbox>
               </v-col>
-            </v-row>
-            <v-row>
               <v-col cols="4">
                 <v-checkbox v-model="item.canExportSTL" :disabled="!item.isActive" hide-details>
                   <template v-slot:label>
@@ -209,7 +216,10 @@ SPDX-License-Identifier: AGPL-3.0-or-later
                   </template>
                 </v-checkbox>
               </v-col>
-              <v-col cols="4">
+            </v-row>
+            <v-row>
+              <v-col cols="9"></v-col>
+              <v-col cols="3">
                 <v-btn
                   color="secondary"
                   variant="elevated"
@@ -220,6 +230,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
                     {
                       canViewModelAttributes: item.canViewModelAttributes,
                       canUpdateModel: item.canUpdateModel,
+                      canRunScripts: item.canRunScripts,
                       canExportFCStd: item.canExportFCStd,
                       canExportSTEP: item.canExportSTEP,
                       canExportSTL: item.canExportSTL,

@@ -43,6 +43,7 @@ import GettingStarted from "@/views/GettingStarted.vue";
 import XavierMenu from "@/views/XavierMenu.vue";
 import XavierUpdateKeyDocuments from "@/views/XavierUpdateKeyDocuments.vue";
 import Bookmarks from "@/views/Bookmarks.vue";
+import Macros from "@/views/Macros.vue";
 import XavierSearchResults from "@/views/XavierSearchResults.vue";
 import XavierRemoveUser from "@/views/XavierRemoveUser.vue";
 import SharedWithMe from "@/views/SharedWithMe.vue";
@@ -204,6 +205,12 @@ const routes = [
     path: '/bookmarks',
     component: Bookmarks,
     name: 'Bookmarks',
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/macros',
+    component: Macros,
+    name: 'Macros',
     meta: { requiresAuth: true },
   },
   {

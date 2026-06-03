@@ -55,6 +55,14 @@ SPDX-License-Identifier: AGPL-3.0-or-later
         location="start"
       >Click new thumbnail</v-tooltip>
     </v-btn>
+    <span>
+      <v-btn icon flat :disabled="(model && !model.haveWriteAccess) || !organization?.constraint?.canRunScripts" @click="runScriptDrawerClicked">
+        <v-icon>mdi-code-tags</v-icon>
+      </v-btn>
+      <v-tooltip activator="parent" location="start">
+        {{ !organization?.constraint?.canRunScripts ? 'Upgrade your plan to run scripts' : 'Run script' }}
+      </v-tooltip>
+    </span>
     <!-- <v-btn v-if="model && siteConfig?.desktopApp?.enabledOpenInDesktopApp" icon flat @click="openModelInDesktopAppDialog">
       <v-icon>mdi-open-in-app</v-icon>
       <v-tooltip
@@ -224,11 +232,17 @@ SPDX-License-Identifier: AGPL-3.0-or-later
     <v-navigation-drawer
       v-model="isDrawerOpen"
       location="right"
-      width="1100"
+      :width="drawerActiveWindow === 'runScript' ? runScriptDrawerWidth : 1100"
       temporary
     >
+      <div
+        v-if="drawerActiveWindow === 'runScript'"
+        class="drawer-resize-handle"
+        @mousedown="startDrawerResize"
+      ></div>
       <MangeSharedModels v-if="drawerActiveWindow === 'sharedModel'" :model="model"/>
       <ModelInfo ref="modelInfoDrawer" v-else-if="drawerActiveWindow === 'modelInfo'" :model="model"/>
+      <RunScriptPanel v-else-if="drawerActiveWindow === 'runScript'" :model="model" :viewer="viewer"/>
     </v-navigation-drawer>
   </div>
   <launch-desktop-app-dialog
@@ -252,6 +266,7 @@ import ModelInfo from '@/components/ModelInfo.vue';
 import ObjectsListView from '@/components/ObjectsListView.vue';
 import openDesktopAppMixin from '@/mixins/openDesktopAppMixin';
 import LaunchDesktopAppDialog from '@/components/LaunchDesktopAppDialog.vue';
+import RunScriptPanel from '@/components/RunScriptPanel.vue';
 
 const { Model, SharedModel, Workspace, Organization } = models.api;
 
@@ -265,6 +280,7 @@ export default {
     ModelInfo,
     ObjectsListView,
     LaunchDesktopAppDialog,
+    RunScriptPanel,
   },
   mixins: [openDesktopAppMixin],
   data: () => ({
@@ -280,6 +296,7 @@ export default {
     manageSharedModelsDrawer: false,
     isDrawerOpen: false,
     drawerActiveWindow: null,
+    runScriptDrawerWidth: 650,
     generatePublicLinkValue: null,
     viewer: null,
   }),
@@ -502,6 +519,30 @@ export default {
         this.isDrawerOpen = true;
       }
     },
+    runScriptDrawerClicked() {
+      if (this.drawerActiveWindow === 'runScript') {
+        this.isDrawerOpen = !this.isDrawerOpen;
+      } else {
+        this.drawerActiveWindow = 'runScript';
+        this.isDrawerOpen = true;
+      }
+    },
+    startDrawerResize(e) {
+      const startX = e.clientX;
+      const startWidth = this.runScriptDrawerWidth;
+      document.body.style.userSelect = 'none';
+      const onMove = (ev) => {
+        const delta = startX - ev.clientX;
+        this.runScriptDrawerWidth = Math.min(1200, Math.max(320, startWidth + delta));
+      };
+      const onUp = () => {
+        document.body.style.userSelect = '';
+        window.removeEventListener('mousemove', onMove);
+        window.removeEventListener('mouseup', onUp);
+      };
+      window.addEventListener('mousemove', onMove);
+      window.addEventListener('mouseup', onUp);
+    },
     modelLoaded(viewer) {
       if (this.isReloadingOBJ) {
         this.$refs.attributeViewer.$data.dialog = false;
@@ -554,4 +595,27 @@ export default {
 </script>
 
 <style scoped>
+.drawer-resize-handle {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 8px;
+  cursor: ew-resize;
+  z-index: 10;
+  user-select: none;
+}
+.drawer-resize-handle::after {
+  content: '';
+  position: absolute;
+  left: 3px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: transparent;
+  transition: background 0.15s;
+}
+.drawer-resize-handle:hover::after {
+  background: rgba(var(--v-theme-primary), 0.4);
+}
 </style>

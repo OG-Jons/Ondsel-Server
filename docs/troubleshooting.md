@@ -16,6 +16,7 @@ Common issues and solutions for Lens Platform deployments.
 - [Database Issues](#database-issues)
 - [OAuth Issues](#oauth-issues)
 - [Branding Issues](#branding-issues)
+- [Script Execution Issues](#script-execution-issues)
 - [Common Issues](#common-issues)
 
 ---
@@ -235,6 +236,45 @@ Common issues and solutions for Lens Platform deployments.
    Common errors:
    - "OBJ generation timeout" - FC-Worker is slow or unresponsive (timeout occurs after multiple retry attempts)
    - "OBJ generation failed" - FC-Worker processing error
+
+---
+
+## Script Execution Issues
+
+### Script fails with "Script runner is temporarily unavailable"
+
+**Symptoms**: Run history shows `error` with this message immediately after clicking Run.
+
+**Solutions**:
+
+This means the backend dispatched the job but FC-Worker was unreachable. See [FC-Worker Not Responding](#fc-worker-not-responding).
+
+---
+
+### Script fails with "Failed to load the model"
+
+**Symptoms**: Run history shows `error` with this message.
+
+**Solutions**:
+
+1. **Check FC-Worker logs** for model download errors:
+   ```bash
+   docker-compose logs fc-worker-celery | grep "failed to fetch model"
+   ```
+
+2. **Verify the model file exists** in the upload storage and is accessible from the FC-Worker container
+
+3. **Check `UPLOAD_URL`** in FC-Worker config points to the correct storage endpoint and is reachable from the FC-Worker container
+
+---
+
+### Script output is truncated
+
+**Symptoms**: `stdout` or `stderr` ends abruptly; output appears cut off.
+
+**Solutions**:
+
+Each of `stdout` and `stderr` is capped at **256 KB**. Reduce the amount of output your script produces (e.g. avoid printing every iteration of a loop).
 
 ---
 

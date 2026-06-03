@@ -1,47 +1,29 @@
-// SPDX-FileCopyrightText: 2024 Ondsel <development@ondsel.com>
+// SPDX-FileCopyrightText: 2026 Amritpal Singh <amrit3701@gmail.com>
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import feathersClient, { makeServicePlugin, BaseModel } from '@/plugins/feathers-client'
 
-export const ProtectionTypeMap = {
-  listed: 'Listed',
-  unlisted: 'Unlisted',
-  pin: 'Pin',
-  direct: 'Direct',
-}
-
-class SharedModel extends BaseModel {
+class Macro extends BaseModel {
   constructor(data, options) {
     super(data, options)
   }
   // Required for $FeathersVuex plugin to work after production transpile.
-  static modelName = 'SharedModel'
+  static modelName = 'Macro'
   // Define default properties here
   static instanceDefaults() {
     return {
-      cloneModelId: '',
+      name: '',
       description: '',
-      protection: ProtectionTypeMap.unlisted,
-      canViewModel: true,
-      canViewModelAttributes: false,
-      canUpdateModel: false,
-      canRunScripts: false,
-      canExportFCStd: false,
-      canExportSTEP: false,
-      canExportSTL: false,
-      canExportOBJ: false,
-      canDownloadDefaultModel: false,
+      code: '',
+      isGlobal: false,
     }
   }
-
-  get showInPublicGallery() {
-    return this.protection === ProtectionTypeMap.listed;
-  }
 }
-const servicePath = 'shared-models'
+
+const servicePath = 'macros'
 const servicePlugin = makeServicePlugin({
-  'Model': SharedModel,
+  'Model': Macro,
   service: feathersClient.service(servicePath),
   servicePath
 })
