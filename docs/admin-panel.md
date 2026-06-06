@@ -382,6 +382,11 @@ The Macros page at `/macros` shows macros scoped to whichever organization is cu
 - Only site administrators can create, edit, or delete global macros
 - Regular users can run global macros but cannot modify them
 - Global macros support the same `<objLabel:NAME>` and `<selectedObject:N>` placeholders as user-written scripts
+- To seed default example global macros in an environment, run:
+  ```bash
+  cd backend
+  npm run migration seedGlobalMacros
+  ```
 
 ---
 

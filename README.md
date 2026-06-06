@@ -203,6 +203,7 @@ Additional documentation is available in the [`docs/`](docs/) directory:
 - **[TrueNAS Installation](docs/lens-truenas-app.md)** - Install Lens on TrueNAS SCALE
 - **[Migration Guide](docs/migration.md)** - Upgrade existing deployments to latest version
 - **[Workflows](docs/workflows.md)** - Platform workflows including signup, organizations, workspaces, file uploads, and model sharing
+- **[Macro Examples](docs/macro-examples.md)** - Placeholder syntax and ready-to-run macro examples for users
 - **[Services](docs/services.md)** - Backend services documentation
 - **[Technical Details](docs/technical.md)** - Technical implementation details
 - **[FC-Worker Upgrade](docs/upgrade.md)** - Upgrade FreeCAD version in FC-Worker

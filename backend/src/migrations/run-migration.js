@@ -54,6 +54,7 @@ import { addOidcProviderToSiteConfigCommand } from './add-oidc-provider-to-site-
 import { seedDevKeycloakOidcSiteConfigCommand } from './seed-dev-keycloak-oidc-site-config.command.js';
 import {createDefaultPublisherEntriesCommand} from "./create-default-publisher-entries.command.js";
 import {migrateOndselToAdminOrganizationCommand} from "./migrate-ondsel-to-admin-organization.command.js";
+import { seedGlobalMacrosCommand } from './seed-global-macros.command.js';
 
 
 async function runOne(command) {
@@ -216,6 +217,9 @@ async function runOne(command) {
       break;
     case 'migrateOndselToAdminOrganization':
       await migrateOndselToAdminOrganizationCommand(app);
+      break;
+    case 'seedGlobalMacros':
+      await seedGlobalMacrosCommand(app);
       break;
     default:
       throw new Error(`Unknown migration command: ${command}`);
