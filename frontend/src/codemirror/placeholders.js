@@ -166,20 +166,22 @@ const placeholderTheme = EditorView.theme({
     marginRight: '4px',
     fontSize: '0.85em',
   },
+  // Chip colours are read from CSS variables so dark mode can override them
+  // (see cmDarkTheme in CodeEditor.vue). The fallbacks are the light palette.
   '.cm-placeholder-objLabel': {
-    background: '#e8f5e9',
-    color: '#1b5e20',
-    borderColor: '#a5d6a7',
+    background: 'var(--cm-chip-green-bg, #e8f5e9)',
+    color: 'var(--cm-chip-green-fg, #1b5e20)',
+    borderColor: 'var(--cm-chip-green-border, #a5d6a7)',
   },
   '.cm-placeholder-selectedObject': {
-    background: '#e3f2fd',
-    color: '#0d47a1',
-    borderColor: '#90caf9',
+    background: 'var(--cm-chip-blue-bg, #e3f2fd)',
+    color: 'var(--cm-chip-blue-fg, #0d47a1)',
+    borderColor: 'var(--cm-chip-blue-border, #90caf9)',
   },
   '.cm-placeholder-chip.cm-placeholder-stale': {
-    background: '#ffebee',
-    color: '#b71c1c',
-    borderColor: '#ef9a9a',
+    background: 'var(--cm-chip-red-bg, #ffebee)',
+    color: 'var(--cm-chip-red-fg, #b71c1c)',
+    borderColor: 'var(--cm-chip-red-border, #ef9a9a)',
     textDecoration: 'line-through',
   },
   '.cm-placeholder-editing': {
@@ -187,14 +189,14 @@ const placeholderTheme = EditorView.theme({
     padding: '0 1px',
   },
   '.cm-placeholder-editing.cm-placeholder-objLabel': {
-    background: '#e8f5e9',
-    color: '#1b5e20',
-    outline: '1px solid #a5d6a7',
+    background: 'var(--cm-chip-green-bg, #e8f5e9)',
+    color: 'var(--cm-chip-green-fg, #1b5e20)',
+    outline: '1px solid var(--cm-chip-green-border, #a5d6a7)',
   },
   '.cm-placeholder-editing.cm-placeholder-selectedObject': {
-    background: '#e3f2fd',
-    color: '#0d47a1',
-    outline: '1px solid #90caf9',
+    background: 'var(--cm-chip-blue-bg, #e3f2fd)',
+    color: 'var(--cm-chip-blue-fg, #0d47a1)',
+    outline: '1px solid var(--cm-chip-blue-border, #90caf9)',
   },
 });
 
