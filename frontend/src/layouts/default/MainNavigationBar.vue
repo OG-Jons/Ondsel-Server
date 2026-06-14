@@ -86,6 +86,42 @@ SPDX-License-Identifier: AGPL-3.0-or-later
         link
       ></v-list-item>
       <v-divider></v-divider>
+      <v-menu
+        :close-on-content-click="false"
+        location="end"
+      >
+        <template #activator="{ props }">
+          <v-list-item
+            v-bind="props"
+            :prepend-icon="currentThemeIcon"
+            title="Theme"
+          ></v-list-item>
+        </template>
+        <v-card>
+          <div class="d-flex align-center justify-center pa-2">
+            <v-btn-toggle
+              :model-value="themePref"
+              @update:model-value="setTheme"
+              mandatory
+              density="comfortable"
+              variant="outlined"
+              divided
+              rounded="lg"
+            >
+              <v-btn
+                v-for="option in themeOptions"
+                :key="option.value"
+                :value="option.value"
+                size="small"
+              >
+                <v-icon :icon="option.icon"></v-icon>
+                <v-tooltip activator="parent" location="bottom">{{ option.label }}</v-tooltip>
+              </v-btn>
+            </v-btn-toggle>
+          </div>
+        </v-card>
+      </v-menu>
+      <v-divider></v-divider>
       <v-list-item
         prepend-icon="mdi-copyright"
         :title="siteConfig?.copyrightText"
@@ -212,17 +248,6 @@ SPDX-License-Identifier: AGPL-3.0-or-later
             account settings
           </v-btn>
         </v-list-item>
-        <v-divider class="my-2"></v-divider>
-        <v-list-subheader>Theme</v-list-subheader>
-        <v-list-item
-          v-for="option in themeOptions"
-          :key="option.value"
-          :prepend-icon="option.icon"
-          :title="option.label"
-          :active="themePref === option.value"
-          density="compact"
-          @click="setTheme(option.value)"
-        ></v-list-item>
       </v-list>
       <v-divider></v-divider>
       <v-card-actions>
@@ -275,6 +300,10 @@ export default {
     currentOrganization: (vm) => vm.userCurrentOrganization,
     railIcon () {
       return this.rail ? 'mdi-arrow-expand-right' : 'mdi-arrow-collapse-left'
+    },
+    currentThemeIcon () {
+      const option = this.themeOptions.find((o) => o.value === this.themePref)
+      return option ? option.icon : 'mdi-theme-light-dark'
     },
     isMobile() {
       return this.$vuetify.display.mobile;
