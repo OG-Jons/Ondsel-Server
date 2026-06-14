@@ -91,6 +91,22 @@ SPDX-License-Identifier: AGPL-3.0-or-later
         location="start"
       >Open messages</v-tooltip>
     </v-btn>
+    <v-btn v-if="sharedModel && sharedModel.canRunScripts && isAuthenticated && user?.constraint?.canRunScripts" icon flat @click="runScriptDrawerClicked">
+      <v-icon>mdi-code-tags</v-icon>
+      <v-tooltip activator="parent" location="start">Run script</v-tooltip>
+    </v-btn>
+    <v-btn v-else-if="sharedModel && sharedModel.canRunScripts && isAuthenticated && !user?.constraint?.canRunScripts" icon flat color="decoration">
+      <v-icon>mdi-code-tags</v-icon>
+      <v-tooltip activator="parent" location="start">Upgrade your plan to run scripts</v-tooltip>
+    </v-btn>
+    <v-btn v-else-if="sharedModel && sharedModel.canRunScripts && !isAuthenticated" icon flat color="decoration">
+      <v-icon>mdi-code-tags</v-icon>
+      <v-tooltip activator="parent" location="start">Run script (must be logged in)</v-tooltip>
+    </v-btn>
+    <v-btn v-else-if="sharedModel && !sharedModel.canRunScripts" icon flat color="decoration">
+      <v-icon>mdi-code-tags</v-icon>
+      <v-tooltip activator="parent" location="start">Share link does not allow running scripts</v-tooltip>
+    </v-btn>
     <v-btn v-if="sharedModel && siteConfig?.desktopApp?.enabledOpenInDesktopApp" icon flat @click="openModelInDesktopAppDialog">
       <v-icon>mdi-open-in-app</v-icon>
       <v-tooltip
@@ -231,6 +247,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
   >
     <SharedModelInfo v-if="drawerActiveWindow === 'modelInfo'" ref="modelInfoDrawer" :shared-model="sharedModel"/>
     <Messages v-else-if="drawerActiveWindow === 'openMessages'" ref="messagesDrawer" :shared-model="sharedModel" />
+    <RunScriptPanel v-else-if="drawerActiveWindow === 'runScript'" :model="model" :viewer="viewer" :shared-model-id="sharedModel?._id"/>
   </v-navigation-drawer>
   <edit-promotion-dialog v-if="currentOrganization" ref="editPromotionDialog" collection="shared-models" :item-id="sharedModel?._id" :item-name="name"></edit-promotion-dialog>
   <ManageBookmarkDialog
@@ -260,6 +277,7 @@ import ShareWithUserDialog from "@/components/ShareWithUserDialog.vue";
 import SharedModelInfo from "@/components/SharedModelInfo.vue";
 import openDesktopAppMixin from '@/mixins/openDesktopAppMixin';
 import LaunchDesktopAppDialog from '@/components/LaunchDesktopAppDialog.vue';
+import RunScriptPanel from '@/components/RunScriptPanel.vue';
 
 const { SharedModel, Model, OrgSecondaryReference } = models.api;
 
@@ -277,6 +295,7 @@ export default {
     SharedModelInfo,
     ObjectsListView,
     LaunchDesktopAppDialog,
+    RunScriptPanel,
   },
   mixins: [openDesktopAppMixin],
   data: () => ({
@@ -446,6 +465,10 @@ export default {
     },
     async modelInfoDrawerClicked() {
       this.drawerActiveWindow = 'modelInfo'; // this causes a fresh mount which causes a data reload
+      this.isDrawerOpen = !this.isDrawerOpen;
+    },
+    runScriptDrawerClicked() {
+      this.drawerActiveWindow = 'runScript';
       this.isDrawerOpen = !this.isDrawerOpen;
     },
     async openMessages() {

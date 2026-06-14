@@ -96,6 +96,7 @@ export const SubscriptionConstraintsType = Type.Object(
     canExportModel: Type.Boolean(),
     defaultValueOfPublicLinkGeneration: Type.Boolean(),
     canDisableAutomaticGenerationOfPublicLink: Type.Boolean(),
+    canRunScripts: Type.Boolean(),
   }
 )
 
@@ -112,6 +113,7 @@ export const subscriptionConstraintMap = {
     canDisableAutomaticGenerationOfPublicLink: false,
     canCreateOpenOrganization: false,
     canCreatePrivateOrganization: false,
+    canRunScripts: false,
   },
   'Community': {
     maxModelObjects: 25,
@@ -124,6 +126,7 @@ export const subscriptionConstraintMap = {
     canDisableAutomaticGenerationOfPublicLink: false,
     canCreateOpenOrganization: false,
     canCreatePrivateOrganization: false,
+    canRunScripts: false,
   },
   'Basic': {
     maxModelObjects: 50,
@@ -136,6 +139,7 @@ export const subscriptionConstraintMap = {
     canDisableAutomaticGenerationOfPublicLink: false,
     canCreateOpenOrganization: false,
     canCreatePrivateOrganization: false,
+    canRunScripts: false,
   },
   'Solo': {
     maxModelObjects: 50,
@@ -148,6 +152,7 @@ export const subscriptionConstraintMap = {
     canDisableAutomaticGenerationOfPublicLink: false,
     canCreateOpenOrganization: false,
     canCreatePrivateOrganization: false,
+    canRunScripts: false,
   },
   'Peer': {
     maxModelObjects: 250,
@@ -160,6 +165,7 @@ export const subscriptionConstraintMap = {
     canDisableAutomaticGenerationOfPublicLink: true,
     canCreateOpenOrganization: true,
     canCreatePrivateOrganization: false,
+    canRunScripts: false,
   },
   'Enterprise': {
     maxModelObjects: 1000,
@@ -172,6 +178,7 @@ export const subscriptionConstraintMap = {
     canDisableAutomaticGenerationOfPublicLink: true,
     canCreateOpenOrganization: true,
     canCreatePrivateOrganization: true,
+    canRunScripts: true,
   },
   'Deleted': {
     maxModelObjects: 0,
@@ -184,6 +191,7 @@ export const subscriptionConstraintMap = {
     canDisableAutomaticGenerationOfPublicLink: false,
     canCreateOpenOrganization: false,
     canCreatePrivateOrganization: false,
+    canRunScripts: false,
   },
 };
 

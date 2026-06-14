@@ -341,6 +341,12 @@ export default {
           route: {name: 'Bookmarks'}
         },
         {
+          icon: 'mdi-code-tags',
+          title: 'Macros',
+          condition: this.user,
+          route: {name: 'Macros'}
+        },
+        {
           icon: 'mdi-download-outline',
           title: `Download ${this.siteConfig?.desktopApp?.name}`,
           condition: true,

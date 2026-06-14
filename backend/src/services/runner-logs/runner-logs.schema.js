@@ -13,7 +13,7 @@ export const runnerLogsSchema = Type.Object(
   {
     _id: ObjectIdSchema(),
     modelId: ObjectIdSchema(),
-    type: StringEnum(['SUCCESS', 'ERROR']),
+    type: StringEnum(['SUCCESS', 'ERROR', 'INFO']),
     uniqueFileName: Type.String(),  // store s3 input file name on which runner perform operation
     createdAt: Type.Number(),
     message: Type.Optional(Type.String()),

@@ -98,6 +98,11 @@ SPDX-License-Identifier: AGPL-3.0-or-later
               <div>Can update model attributes</div>
             </template>
           </v-checkbox>
+          <v-checkbox v-model="permissions.canRunScripts" :disabled="isGeneratingLink" hide-details>
+            <template v-slot:label>
+              <div>Can run scripts</div>
+            </template>
+          </v-checkbox>
           <div class="ml-2 mt-2 text-body-2">Export model permissions</div>
           <v-container>
             <v-row no-gutters>
@@ -204,6 +209,7 @@ export default {
       canViewModel: true,
       canViewModelAttributes: false,
       canUpdateModel: false,
+      canRunScripts: false,
       canExportFCStd: false,
       canExportSTEP: false,
       canExportSTL: false,
@@ -269,6 +275,7 @@ export default {
       sharedModel.canViewModel = this.permissions.canViewModel;
       sharedModel.canViewModelAttributes = this.permissions.canViewModelAttributes;
       sharedModel.canUpdateModel = this.permissions.canUpdateModel;
+      sharedModel.canRunScripts = this.permissions.canRunScripts;
       sharedModel.canExportFCStd = this.permissions.canExportFCStd;
       sharedModel.canExportSTEP = this.permissions.canExportSTEP;
       sharedModel.canExportSTL = this.permissions.canExportSTL;

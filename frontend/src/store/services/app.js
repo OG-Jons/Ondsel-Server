@@ -4,11 +4,11 @@
 
 import { models } from '@feathersjs/vuex';
 import axios from "axios";
-import { SITE_CONFIG_ID } from './site-config';
+import { SITE_CONFIG_ID, SITE_CONFIG_DEFAULTS } from './site-config';
 
 
 const state = {
-  siteConfig: null,
+  siteConfig: SITE_CONFIG_DEFAULTS,
   currentOrganization: null
 }
 

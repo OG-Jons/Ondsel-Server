@@ -5,12 +5,13 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
 # Run migrations before starting the application
-npm run migration addInitialTosPp
-npm run migration createDefaultSiteConfig
-npm run migration addOauthToSiteConfig
-npm run migration addOidcProviderToSiteConfig
-npm run migration addDefaultAdminUser
-npm run migration createDefaultPublisherEntries
+npm run migration -- \
+  addInitialTosPp \
+  createDefaultSiteConfig \
+  addOauthToSiteConfig \
+  addOidcProviderToSiteConfig \
+  addDefaultAdminUser \
+  createDefaultPublisherEntries
 
 # Start the application
 if [ "$NODE_ENV" = "development" ]; then

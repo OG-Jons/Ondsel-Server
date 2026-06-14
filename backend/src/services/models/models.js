@@ -489,6 +489,7 @@ const createSharedModelObject = async (context) => {
     canViewModel: true,
     canViewModelAttributes: true,
     canUpdateModel: false,
+    canRunScripts: false,
     canExportFCStd: false,
     canExportSTEP: false,
     canExportSTL: false,

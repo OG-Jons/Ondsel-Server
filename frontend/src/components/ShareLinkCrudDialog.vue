@@ -152,6 +152,17 @@ SPDX-License-Identifier: AGPL-3.0-or-later
               If you allow this, the viewer can update parametric parameters of the CAD file and see their own version of the model.
             </v-tooltip>
           </v-checkbox>
+          <v-checkbox
+            class="mt-n4"
+            v-model="permissions.canRunScripts"
+            :disabled="isGeneratingLink"
+            hide-details
+            label="Can run scripts"
+          >
+            <v-tooltip activator="parent">
+              If you allow this, the viewer can run Python scripts against the model.
+            </v-tooltip>
+          </v-checkbox>
           <span class="my-2 text-subtitle-2">Viewer export/download permissions</span>
           <br>
           <v-sheet
@@ -295,6 +306,7 @@ export default {
       canViewModel: true,
       canViewModelAttributes: false,
       canUpdateModel: false,
+      canRunScripts: false,
       canExportFCStd: false,
       canExportSTEP: false,
       canExportSTL: false,
@@ -358,6 +370,7 @@ export default {
       this.permissions.canViewModel = true;
       this.permissions.canViewModelAttributes = false;
       this.permissions.canUpdateModel = false;
+      this.permissions.canRunScripts = false;
       this.permissions.canExportFCStd = false;
       this.permissions.canExportSTEP = false;
       this.permissions.canExportSTL = false;
@@ -385,6 +398,7 @@ export default {
       this.permissions.canViewModel = sharedModel.canViewModel;
       this.permissions.canViewModelAttributes = sharedModel.canViewModelAttributes;
       this.permissions.canUpdateModel = sharedModel.canUpdateModel;
+      this.permissions.canRunScripts = sharedModel.canRunScripts;
       this.permissions.canExportFCStd = sharedModel.canExportFCStd;
       this.permissions.canExportSTEP = sharedModel.canExportSTEP;
       this.permissions.canExportSTL = sharedModel.canExportSTL;
@@ -456,6 +470,10 @@ export default {
       // canUpdateModel
       if (this.permissions.canUpdateModel !== this.sharedModel.canUpdateModel) {
         changes.canUpdateModel = this.permissions.canUpdateModel;
+      }
+      // canRunScripts
+      if (this.permissions.canRunScripts !== this.sharedModel.canRunScripts) {
+        changes.canRunScripts = this.permissions.canRunScripts;
       }
       // canExportFCStd
       if (this.permissions.canExportFCStd !== this.sharedModel.canExportFCStd) {
@@ -530,6 +548,8 @@ export default {
       sharedModel.canViewModelAttributes = this.permissions.canViewModelAttributes;
       // canUpdateModel
       sharedModel.canUpdateModel = this.permissions.canUpdateModel;
+      // canRunScripts
+      sharedModel.canRunScripts = this.permissions.canRunScripts;
       // canExportFCStd
       sharedModel.canExportFCStd = this.permissions.canExportFCStd;
       // canExportSTEP

@@ -101,6 +101,22 @@ export const canUserExportModel = async context => {
   return context;
 }
 
+export const canUserRunScripts = async context => {
+  if (!getUserConstraint(context.params.user).canRunScripts) {
+    throw new BadRequest(upgradeTierErrorMsg);
+  }
+  if (!context.data.sharedModelId) {
+    const { constraint } = await context.app.service('organizations').get(
+      context.params.$organizationId,
+      { query: { $select: ['_id', 'owner', 'constraint'] } }
+    );
+    if (!constraint.canRunScripts) {
+      throw new BadRequest(upgradeTierErrorMsg);
+    }
+  }
+  return context;
+}
+
 export const canUserCreateShareLink = async context => {
 
   if (context.data.cloneModelId) {

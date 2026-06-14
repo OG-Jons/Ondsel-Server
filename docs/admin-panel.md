@@ -34,6 +34,7 @@ The Xavier admin panel is a hidden administrative interface for site administrat
 | [Key Documents](#key-documents) | `/xavier-7492783/:name` | Legal document management |
 | [Remove User](#remove-user) | `/xavier-55554337898` | User account deletion |
 | [Admin Search](#admin-search) | `/xavier-9584355633/:text` | Search users, workspaces, orgs |
+| [Global Macros](#global-macros) | `/macros` | Create Python macros visible to all users |
 
 ---
 
@@ -352,6 +353,40 @@ Search across the platform using the Keywords service.
 2. Review results with curated previews
 3. Click **Get Detail** to expand details (currently only shows user info: ID, tier, username)
 4. Click result to navigate directly to the entity page
+
+---
+
+## Global Macros
+
+**Route:** `/macros`
+
+Site administrators can create Python macros that are visible to all users across the platform. These are called **global macros** and appear in every user's macro list alongside their own personal and org-scoped macros.
+
+### How it works
+
+Macros are scoped by organization. A macro created under the **admin organization** is automatically marked `isGlobal: true` and becomes readable by every user. Macros created under any other organization (including a user's personal org) are only visible to members of that organization.
+
+The Macros page at `/macros` shows macros scoped to whichever organization is currently selected in the org switcher. To create a global macro, the admin must first switch to the admin organization — the **New Global Macro** button only appears when the admin org is the active context.
+
+### Usage
+
+1. Log in as a site administrator
+2. Switch to the admin organization using the org switcher
+3. Select **Macros** from the left sidebar (`/macros`)
+4. Click **New Global Macro**
+5. Enter a name, optional description, and the Python script body
+6. Save — the macro immediately appears in all users' macro lists
+
+### Notes
+
+- Only site administrators can create, edit, or delete global macros
+- Regular users can run global macros but cannot modify them
+- Global macros support the same `<objLabel:NAME>` and `<selectedObject:N>` placeholders as user-written scripts
+- To seed default example global macros in an environment, run:
+  ```bash
+  cd backend
+  npm run migration seedGlobalMacros
+  ```
 
 ---
 

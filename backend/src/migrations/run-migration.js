@@ -54,11 +54,10 @@ import { addOidcProviderToSiteConfigCommand } from './add-oidc-provider-to-site-
 import { seedDevKeycloakOidcSiteConfigCommand } from './seed-dev-keycloak-oidc-site-config.command.js';
 import {createDefaultPublisherEntriesCommand} from "./create-default-publisher-entries.command.js";
 import {migrateOndselToAdminOrganizationCommand} from "./migrate-ondsel-to-admin-organization.command.js";
+import { seedGlobalMacrosCommand } from './seed-global-macros.command.js';
 
 
-async function runMigration() {
-  console.log('Migration start');
-  const command = process.argv[2];
+async function runOne(command) {
   switch (command) {
     case 'migrateOldModels':
       await migrateOldModelsCommand(app);
@@ -219,15 +218,37 @@ async function runMigration() {
     case 'migrateOndselToAdminOrganization':
       await migrateOndselToAdminOrganizationCommand(app);
       break;
+    case 'seedGlobalMacros':
+      await seedGlobalMacrosCommand(app);
+      break;
     default:
-      console.error('Please specify the migration command.')
-      process.exit(1);
+      throw new Error(`Unknown migration command: ${command}`);
   }
-  console.log('Migration successfully applied!');
+}
+
+// Commands that read a positional arg from process.argv[3]; must be
+// invoked as a single command (cannot be batched).
+const ARG_TAKING_COMMANDS = new Set([
+  'upgradeUserTier',
+  'upgradeUnverifiedUserToVerifiedAndMigrateToSoloTier',
+]);
+
+async function runMigrations() {
+  const args = process.argv.slice(2);
+  if (args.length === 0) {
+    console.error('Please specify at least one migration command.');
+    process.exit(1);
+  }
+  const commands = ARG_TAKING_COMMANDS.has(args[0]) ? [args[0]] : args;
+  for (const command of commands) {
+    console.log(`Migration start: ${command}`);
+    await runOne(command);
+    console.log(`Migration successfully applied: ${command}`);
+  }
   process.exit(0);
 }
 
-runMigration().catch(error => {
-  console.error('Migration failed:', error);
+runMigrations().catch(error => {
+  console.error('Migration runner crashed:', error);
   process.exit(1);
 });
