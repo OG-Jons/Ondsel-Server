@@ -378,6 +378,6 @@ export default {
 
 <style scoped>
 .bw-icon {
-  color: #000000;
+  color: rgb(var(--v-theme-on-surface));
 }
 </style>

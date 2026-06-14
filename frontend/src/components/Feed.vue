@@ -111,7 +111,7 @@ h1 {
   text-align: left;
 }
 a {
-  color: #42b983;
+  color: rgb(var(--v-theme-link));
 }
 /* CSS Spinner */
 .spinner {
@@ -127,9 +127,7 @@ a {
 .spinner > div {
   width: 18px;
   height: 18px;
-  /* background-color: #ff641b; */
-  background-color: #42b983;
-  background-color: #777;
+  background-color: rgb(var(--v-theme-muted));
   margin-right: 10px;
 
   border-radius: 100%;

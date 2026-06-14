@@ -86,6 +86,42 @@ SPDX-License-Identifier: AGPL-3.0-or-later
         link
       ></v-list-item>
       <v-divider></v-divider>
+      <v-menu
+        :close-on-content-click="false"
+        location="end"
+      >
+        <template #activator="{ props }">
+          <v-list-item
+            v-bind="props"
+            :prepend-icon="currentThemeIcon"
+            title="Theme"
+          ></v-list-item>
+        </template>
+        <v-card>
+          <div class="d-flex align-center justify-center pa-2">
+            <v-btn-toggle
+              :model-value="themePref"
+              @update:model-value="setTheme"
+              mandatory
+              density="comfortable"
+              variant="outlined"
+              divided
+              rounded="lg"
+            >
+              <v-btn
+                v-for="option in themeOptions"
+                :key="option.value"
+                :value="option.value"
+                size="small"
+              >
+                <v-icon :icon="option.icon"></v-icon>
+                <v-tooltip activator="parent" location="bottom">{{ option.label }}</v-tooltip>
+              </v-btn>
+            </v-btn-toggle>
+          </div>
+        </v-card>
+      </v-menu>
+      <v-divider></v-divider>
       <v-list-item
         prepend-icon="mdi-copyright"
         :title="siteConfig?.copyrightText"
@@ -232,6 +268,17 @@ SPDX-License-Identifier: AGPL-3.0-or-later
 import { mapActions, mapState, mapGetters } from 'vuex';
 import { getInitials } from '@/genericHelpers';
 import OrganizationMixin from '@/mixins/organizationMixin';
+import {
+  getThemePreference,
+  resolveActiveTheme,
+  setThemePreference,
+} from '@/themePreference';
+
+const THEME_OPTIONS = [
+  { value: 'light', label: 'Light', icon: 'mdi-white-balance-sunny' },
+  { value: 'dark', label: 'Dark', icon: 'mdi-weather-night' },
+  { value: 'system', label: 'System', icon: 'mdi-theme-light-dark' },
+];
 
 export default {
   name: "MainNavigationBar",
@@ -242,6 +289,8 @@ export default {
     searchText: '',
     drawer: null,
     rail: false,
+    themePref: getThemePreference(),
+    themeOptions: THEME_OPTIONS,
   }),
   computed: {
     ...mapState('auth', { loggedInUser: 'payload' }),
@@ -251,6 +300,10 @@ export default {
     currentOrganization: (vm) => vm.userCurrentOrganization,
     railIcon () {
       return this.rail ? 'mdi-arrow-expand-right' : 'mdi-arrow-collapse-left'
+    },
+    currentThemeIcon () {
+      const option = this.themeOptions.find((o) => o.value === this.themePref)
+      return option ? option.icon : 'mdi-theme-light-dark'
     },
     isMobile() {
       return this.$vuetify.display.mobile;
@@ -341,6 +394,11 @@ export default {
     gotoAccountSettings() {
       this.$router.push({name: 'AccountSettings', params: {slug: this.user.username}});
       this.menu = false;
+    },
+    setTheme(pref) {
+      this.themePref = pref;
+      setThemePreference(pref);
+      this.$vuetify.theme.global.name = resolveActiveTheme(pref);
     },
     adjustRail() {
       this.rail = !!this.isMobile;

@@ -26,7 +26,7 @@ services:
     network_mode: "none"
 
   mongodb:
-    image: mongo:latest
+    image: mongo:8.0.23
     container_name: lens-mongodb
     restart: unless-stopped
     user: "568:568"

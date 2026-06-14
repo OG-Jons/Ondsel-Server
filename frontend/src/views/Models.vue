@@ -61,28 +61,28 @@ SPDX-License-Identifier: AGPL-3.0-or-later
             </template>
             <template v-else>
               <v-sheet
-                color="#F4F4F4"
+                color="placeholder"
                 height="200px"
                 class="d-flex justify-center align-center"
               >
                 <div class="d-flex align-center flex-column">
-                  <v-icon icon="mdi-drawing" size="x-large" color="#8D8D8D" />
-                  <span class="mt-2" style="color: #8D8D8D">Click to generate thumbnail</span>
+                  <v-icon icon="mdi-drawing" size="x-large" color="muted" />
+                  <span class="mt-2 text-muted">Click to generate thumbnail</span>
                 </div>
               </v-sheet>
             </template>
 
-            <v-card-title style="background: #fafafa;">
+            <v-card-title class="bg-surface-soft">
               <span class="text-body-1">
                 {{ model.customerFileName }}
               </span>
             </v-card-title>
 
-            <v-card-subtitle style="background: #fafafa;">
+            <v-card-subtitle class="bg-surface-soft">
               {{ dateFormat(model.createdAt) }}
             </v-card-subtitle>
 
-          <v-card-actions style="background: #fafafa;">
+          <v-card-actions class="bg-surface-soft">
             <v-spacer></v-spacer>
             <DeleteDialog :model="model" @delete-model="deleteModel" />
             <v-btn

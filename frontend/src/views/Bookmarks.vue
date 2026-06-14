@@ -68,25 +68,25 @@ SPDX-License-Identifier: AGPL-3.0-or-later
                 </template>
                 <template v-else>
                   <v-sheet
-                    color="#F4F4F4"
+                    color="placeholder"
                     height="200px"
                     class="d-flex justify-center align-center"
                   >
-                    <span style="color: #8D8D8D">?</span><br>
+                    <span class="text-muted">?</span><br>
                   </v-sheet>
                 </template>
 
-                <v-card-title style="background: #fafafa;">
+                <v-card-title class="bg-surface-soft">
                   <span class="text-body-1">
                     {{ bookmark.collectionSummary.custFileName }}
                   </span>
                 </v-card-title>
 
-                <v-card-subtitle style="background: #fafafa;">
+                <v-card-subtitle class="bg-surface-soft">
                   {{ new Date(bookmark.collectionSummary.createdAt).toDateString() }}
                 </v-card-subtitle>
 
-                <v-card-actions style="background: #fafafa;">
+                <v-card-actions class="bg-surface-soft">
                   <v-spacer />
                   <v-btn
                     color="decoration"
