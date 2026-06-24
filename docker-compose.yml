@@ -32,9 +32,6 @@ services:
       - SMTP_PASS=${SMTP_PASS}
       - SMTP_FROM=${SMTP_FROM}
 
-      # Explicitly disable S3 / AWS
-      - USE_S3=false
-
       # Initial admin
       - DEFAULT_ADMIN_EMAIL=admin@local.test
       - DEFAULT_ADMIN_USERNAME=${SERVICE_USER_BACKEND}
