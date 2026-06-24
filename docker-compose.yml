@@ -5,42 +5,54 @@
 services:
   mongodb:
     image: mongo:8.0.23
-    ports:
-      - "${EXPOSE_DB_PORT:-27018}:27017"
     volumes:
-      - mongodb_data:/data/db
+      - ${COOLIFY_VOLUME_MONGODB_DATA}:/data/db
 
   backend:
     image: lens-backend
     build:
       context: ./backend
       dockerfile: Dockerfile
-    ports:
-      - "${PORT:-3030}:${PORT:-3030}"
     environment:
-      - HOSTNAME=${HOSTNAME:-localhost}
+      # Public backend URL routed by Coolify to container port 3030
+      - SERVICE_URL_BACKEND_3030
+
+      - HOSTNAME=${SERVICE_FQDN_BACKEND_3030}
       - PORT=${PORT:-3030}
       - DB_URL=mongodb://mongodb:27017/backend-db
-      - FRONTEND_URL=${FRONTEND_URL:-http://localhost:3000}
-      - VITE_APP_API_URL=${VITE_APP_API_URL:-http://localhost:3030/}
-      - FC_WORKER_URL=http://0.0.0.0:8080/2015-03-31/functions/function/invocations
-      - SMTP_HOST
+
+      # Public app URLs
+      - FRONTEND_URL=${SERVICE_URL_FRONTEND}
+      - VITE_APP_API_URL=${SERVICE_URL_BACKEND_3030}
+
+      # Internal worker endpoint
+      - FC_WORKER_URL=http://127.0.0.1:8080/2015-03-31/functions/function/invocations
+
+      # SMTP
+      - SMTP_HOST=${SMTP_HOST}
       - SMTP_PORT=${SMTP_PORT:-465}
-      - SMTP_USER
-      - SMTP_PASS
-      - SMTP_FROM
-      - USE_S3
-      - AWS_ACCESS_KEY_ID
-      - AWS_SECRET_ACCESS_KEY
-      - AWS_CLIENT_MODELS_BUCKET
-      - AWS_REGION
-      - DEFAULT_ADMIN_EMAIL
-      - DEFAULT_ADMIN_USERNAME
-      - DEFAULT_ADMIN_PASSWORD
-      - DEFAULT_ADMIN_NAME
-      - LOCAL_SIGNED_URL_SECRET
+      - SMTP_USER=${SMTP_USER}
+      - SMTP_PASS=${SMTP_PASS}
+      - SMTP_FROM=${SMTP_FROM}
+
+      # S3
+      - USE_S3=${USE_S3:-false}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - AWS_CLIENT_MODELS_BUCKET=${AWS_CLIENT_MODELS_BUCKET}
+      - AWS_REGION=${AWS_REGION}
+
+      # Initial admin
+      - DEFAULT_ADMIN_EMAIL=${DEFAULT_ADMIN_EMAIL:?}
+      - DEFAULT_ADMIN_USERNAME=${DEFAULT_ADMIN_USERNAME:?}
+      - DEFAULT_ADMIN_PASSWORD=${DEFAULT_ADMIN_PASSWORD:?}
+      - DEFAULT_ADMIN_NAME=${DEFAULT_ADMIN_NAME:?}
+
+      # App secret
+      - LOCAL_SIGNED_URL_SECRET=${SERVICE_PASSWORD_64_LENS}
+
     volumes:
-      - uploads_data:/app/uploads
+      - ${COOLIFY_VOLUME_UPLOADS_DATA}:/app/uploads
     depends_on:
       - mongodb
 
@@ -50,18 +62,14 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        - VITE_APP_API_URL=${VITE_APP_API_URL:-http://localhost:3030/}
-        - VITE_MATOMO_URL=${VITE_MATOMO_URL:-http://localhost:7000}
-        - VITE_MATOMO_SITE=${VITE_MATOMO_SITE:-1}
-        - VITE_STRIPE_PURCHASE_PEER_URL
+        - VITE_APP_API_URL=${SERVICE_URL_BACKEND_3030}
+        - VITE_MATOMO_URL=${SERVICE_URL_MATOMO_8080:-}
+        - VITE_MATOMO_SITE=${VITE_MATOMO_SITE:-}
+        - VITE_STRIPE_PURCHASE_PEER_URL=${VITE_STRIPE_PURCHASE_PEER_URL}
     environment:
-      - VITE_APP_API_URL
-      - VITE_MATOMO_URL
-      - VITE_MATOMO_SITE
-      - VITE_STRIPE_PURCHASE_PEER_URL
+      # Public frontend URL routed by Coolify to container port 80
+      - SERVICE_URL_FRONTEND
       - PROXY_SCHEME_PREFIX=${PROXY_SCHEME_PREFIX:-https://}
-    ports:
-      - "3000:80"
     depends_on:
       - backend
 
@@ -89,8 +97,7 @@ services:
     environment:
       - REDIS_HOST=fc-worker-redis
       - REDIS_PORT=6379
-      - BACKEND_URL=${BACKEND_URL:-http://localhost:3030}
-    # bubblewrap (RUN_CODE_SNIPPET sandbox) needs CAP_SYS_ADMIN + writable cgroup.
+      - BACKEND_URL=http://127.0.0.1:3030
     privileged: true
     network_mode: "service:backend"
     depends_on:
@@ -103,41 +110,34 @@ services:
     image: mariadb:11.4.4
     command: --max-allowed-packet=128M
     environment:
-      - MYSQL_ROOT_PASSWORD=matomo
-      - MYSQL_DATABASE=matomo
-      - MYSQL_USER=matomo 
-      - MYSQL_PASSWORD=matomo
+      - MYSQL_ROOT_PASSWORD=${SERVICE_PASSWORD_MATOMO_DB_ROOT}
+      - MYSQL_DATABASE=${MATOMO_DB_NAME:-matomo}
+      - MYSQL_USER=${SERVICE_USER_MATOMO_DB}
+      - MYSQL_PASSWORD=${SERVICE_PASSWORD_MATOMO_DB}
     volumes:
-      - matomo_db:/var/lib/mysql
+      - ${COOLIFY_VOLUME_MATOMO_DB}:/var/lib/mysql
 
   matomo:
     profiles:
       - matomo-enabled
     image: amrit3701/bitnami-matomo:5.8.0-debian-12-r4
-    ports:
-      - "7000:8080"
     environment:
+      # Public Matomo URL routed by Coolify to container port 8080
+      - SERVICE_URL_MATOMO_8080
+
       - MATOMO_DATABASE_HOST=matomo-db
       - MATOMO_DATABASE_TABLE_PREFIX=matomo_
-      - MATOMO_DATABASE_USER=matomo
-      - MATOMO_DATABASE_PASSWORD=matomo
-      - MATOMO_DATABASE_NAME=matomo
-      - MATOMO_WEBSITE_NAME=Lens
-      - MATOMO_WEBSITE_HOST=${FRONTEND_URL:-http://localhost:3000}
+      - MATOMO_DATABASE_USER=${SERVICE_USER_MATOMO_DB}
+      - MATOMO_DATABASE_PASSWORD=${SERVICE_PASSWORD_MATOMO_DB}
+      - MATOMO_DATABASE_NAME=${MATOMO_DB_NAME:-matomo}
+
+      - MATOMO_WEBSITE_NAME=${MATOMO_WEBSITE_NAME:-Lens}
+      - MATOMO_WEBSITE_HOST=${SERVICE_URL_FRONTEND}
+
       - MATOMO_USERNAME=${MATOMO_USERNAME:-admin}
-      - MATOMO_PASSWORD=${MATOMO_PASSWORD:-admin@local.test}
-      - MATOMO_EMAIL=${MATOMO_EMAIL:-admin@local.test}
+      - MATOMO_PASSWORD=${MATOMO_PASSWORD:-${SERVICE_PASSWORDWITHSYMBOLS_64_MATOMO_ADMIN}}
+      - MATOMO_EMAIL=${MATOMO_EMAIL:-admin@example.com}
     volumes:
-      - matomo_data:/bitnami/matomo
+      - ${COOLIFY_VOLUME_MATOMO_DATA}:/bitnami/matomo
     depends_on:
       - matomo-db
-
-volumes:
-  mongodb_data:
-    name: mongodb_data
-  uploads_data:
-    name: uploads_data
-  matomo_db:
-    name: matomo_db
-  matomo_data:
-    name: matomo_data
